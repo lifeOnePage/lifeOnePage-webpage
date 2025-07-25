@@ -4,14 +4,14 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDVaYKqpzIjLvDF5GCxtUbkfjAPI7FEGAo",
-  authDomain: "lifeonepage.firebaseapp.com",
-  databaseURL: "https://lifeonepage-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "lifeonepage",
-  storageBucket: "lifeonepage.firebasestorage.app",
-  messagingSenderId: "536810357686",
-  appId: "1:536810357686:web:4972db836c2fb163037717",
-  measurementId: "G-C0N6YQEGBX",
+  apiKey: process.env.NEXT_PUBLIC_APIKEY,
+  authDomain: process.env.NEXT_PUBLIC_AUTHDOMAIN,
+  databaseURL: process.env.NEXT_PUBLIC_DATABASEURL,
+  projectId: process.env.NEXT_PUBLIC_PROJECTID,
+  storageBucket: process.env.NEXT_PUBLIC_STORAGEBUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_MESSAGINGSENDERID,
+  appId: process.env.NEXT_PUBLIC_APPID,
+  measurementId: process.env.NEXT_PUBLIC_MEASUREMENTID,
 };
 
 export const app = initializeApp(firebaseConfig);

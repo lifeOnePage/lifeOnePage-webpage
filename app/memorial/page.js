@@ -6,45 +6,44 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import AuthOverlay from "./AuthOverlay";
 import MemorialPage from "./MemorialPage";
-import { fetchUserData } from "../utils/firestoreUtils";
+import { useUser } from "../contexts/UserContext";
 
 export default function MemorialPageWrapper() {
-  const [user, setUser] = useState(null);
-  const [initialData, setInitialData] = useState(null);
   const [showAuth, setShowAuth] = useState(false); // 로그인 요구 여부
-  const [loading, setLoading] = useState(true);
   const [authlayerVisible, setAuthlayerVisible] = useState(false);
+    const { user, initialData, dataLoading } = useUser();
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        console.log(u);
-        setUser(u);
-        const userRef = doc(firestore, "users", u.uid);
-        const userSnap = await getDoc(userRef);
+  // useEffect(() => {
+  //   const unsub = onAuthStateChanged(auth, async (u) => {
+  //     if (u) {
+  //       console.log(u);
+  //       setUser(u);
+  //       const userRef = doc(firestore, "users", u.uid);
+  //       const userSnap = await getDoc(userRef);
 
-        // Firestore에 사용자 문서가 없으면 생성
-        if (!userSnap.exists()) {
-          await setDoc(userRef, {
-            phoneNumber: u.phoneNumber,
-            createdAt: serverTimestamp(),
-          });
-        }
+  //       // Firestore에 사용자 문서가 없으면 생성
+  //       if (!userSnap.exists()) {
+  //         await setDoc(userRef, {
+  //           phoneNumber: u.phoneNumber,
+  //           createdAt: serverTimestamp(),
+  //         });
+  //       }
 
-        const data = await fetchUserData(u.uid);
-        setInitialData(data);
-        setShowAuth(false); // 로그인 완료
-      } else {
-        setShowAuth(true); // 로그인 필요
-      }
+  //       const data = await fetchUserData(u.uid);
+  //       setInitialData(data);
+  //       setShowAuth(false); // 로그인 완료
+  //     } else {
+  //       setShowAuth(true); // 로그인 필요
+  //     }
 
-      setLoading(false); // auth 확인 끝
-    });
+  //     setLoading(false); // auth 확인 끝
+  //   });
 
-    return () => unsub();
-  }, []);
+  //   return () => unsub();
+  // }, []);
+  console.log(user, initialData,dataLoading)
 
-  if (loading) {
+  if (dataLoading) {
     return (
       <div style={{ textAlign: "center", padding: "40px" }}>불러오는 중...</div>
     );
@@ -52,7 +51,7 @@ export default function MemorialPageWrapper() {
   function handleToggleAuth() {
     setAuthlayerVisible(!authlayerVisible);
   }
-  console.log(authlayerVisible)
+  
 
   return (
     <div style={{ position: "relative", fontFamily: "Pretendard" }}>

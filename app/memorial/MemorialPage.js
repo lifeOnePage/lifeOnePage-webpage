@@ -94,6 +94,10 @@ const MemorialPage = ({ user, initialData }) => {
     const images = [];
     const videos = [];
 
+    //업데이트 필요
+    //미디어를 **인덱스와 함께** imageurl와 videourl에 넣어서
+    //imagering 렌더링시 텍스쳐 배열 만들때 인덱스 순서에 맞게 texture를 재구성할수 있게
+
     // 1. 유년시절
     gallery.childhood?.forEach(({ url }) => {
       if (url.endsWith(".mp4")) videos.push(url);

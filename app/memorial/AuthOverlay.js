@@ -1,11 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { setupRecaptcha, sendVerificationCode, confirmCode } from "../auth/phoneAuth";
+import {
+  setupRecaptcha,
+  sendVerificationCode,
+  confirmCode,
+} from "../auth/phoneAuth";
 import { formatPhoneWithHyphen, toE164 } from "../lib/phone";
-import { serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { getDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { fetchUserData } from "../utils/firebaseDb";
+import { useUser } from "../contexts/UserContext";
 
-export default function AuthOverlay({ auth, firestore, onAuthComplete }) {
+export default function AuthOverlay({
+  auth,
+  firestore,
+  onAuthComplete,
+}) {
   const [mode, setMode] = useState("login");
   const [step, setStep] = useState("phone");
   const [phone, setPhone] = useState("");
@@ -14,11 +25,51 @@ export default function AuthOverlay({ auth, firestore, onAuthComplete }) {
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { setUser, setInitialData, setDataLoading } = useUser();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setTimeout(() => setupRecaptcha("recaptcha-container"), 0);
-    }
+    const containerId = "recaptcha-container";
+
+    const existing = document.getElementById(containerId);
+    if (existing) existing.innerHTML = "";
+
+    setTimeout(() => setupRecaptcha(containerId), 0);
+
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        delete window.recaptchaVerifier;
+      }
+    };
+  }, []);
+  useEffect(() => {
+    setDataLoading(true);
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        console.log(u);
+        setUser(u);
+        const userRef = doc(firestore, "users", u.uid);
+        const userSnap = await getDoc(userRef);
+
+        // Firestore에 사용자 문서가 없으면 생성
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            phoneNumber: u.phoneNumber,
+            createdAt: serverTimestamp(),
+          });
+        }
+
+        const data = await fetchUserData(u.uid);
+        setInitialData(data);
+        // setShowAuth(false); // 로그인 완료
+      } else {
+        // setShowAuth(true); // 로그인 필요
+      }
+
+      setDataLoading(false); // auth 확인 끝
+    });
+
+    return () => unsub();
   }, []);
 
   const handleSend = async () => {
@@ -64,16 +115,30 @@ export default function AuthOverlay({ auth, firestore, onAuthComplete }) {
   };
 
   return (
-    <div style={{
-      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: "rgba(0,0,0,0.7)", display: "flex",
-      alignItems: "center", justifyContent: "center", zIndex: 9999
-    }}>
-      <div style={{
-        padding: "30px", borderRadius: "10px",
-        width: "90%", maxWidth: "360px", textAlign: "center"
-      }}>
-        <h2 style={{color:"white", fontWeight:"600"}}>LifeOnePage</h2>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.7)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1250,
+      }}
+    >
+      <div
+        style={{
+          padding: "30px",
+          borderRadius: "10px",
+          width: "90%",
+          maxWidth: "360px",
+          textAlign: "center",
+        }}
+      >
+        <h2 style={{ color: "white", fontWeight: "600" }}>LifeOnePage</h2>
 
         {step === "phone" && (
           <>
@@ -126,11 +191,21 @@ export default function AuthOverlay({ auth, firestore, onAuthComplete }) {
 }
 
 const inputStyle = {
-  width: "100%", padding: "10px", margin: "8px 0",
-  border: "1px solid #ccc", borderRadius: "6px", color:"white",backgroundColor: "#ffffff44"
+  width: "100%",
+  padding: "10px",
+  margin: "8px 0",
+  border: "1px solid #ccc",
+  borderRadius: "6px",
+  color: "white",
+  backgroundColor: "#ffffff44",
 };
 const btnStyle = {
-  width: "100%", padding: "10px", margin: "8px 0",
-  backgroundColor: "#7f1d1d", color: "#fff", border: "none",
-  borderRadius: "6px", cursor: "pointer"
+  width: "100%",
+  padding: "10px",
+  margin: "8px 0",
+  backgroundColor: "#7f1d1d",
+  color: "#fff",
+  border: "none",
+  borderRadius: "6px",
+  cursor: "pointer",
 };
