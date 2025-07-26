@@ -1,0 +1,57 @@
+// /app/api/gpt-story/route.js
+import { NextResponse } from 'next/server';
+
+export async function POST(req) {
+  const { messages } = await req.json();
+
+const systemPrompt = `
+당신은 GPT 대화를 기반으로 한 사용자의 '생애문'(life story essay)을 작성하는 작가입니다.
+
+다음 기준에 맞춰 사용자 생애문을 구성하십시오:
+
+1. 문체는 감성적이되 과장되지 않고 사실 기반이어야 합니다.
+2. 내용은 시간 순으로 서술하되, 중심 주제나 사람, 사건이 부각되도록 구성합니다.
+3. 불완전한 답변은 유추하지 말고, 가능한 정보 내에서 자연스럽게 연결합니다.
+4. 다음 요소들을 반드시 반영하도록 시도하십시오:
+   - 성장 환경과 배경
+   - 특별한 기억 또는 사건
+   - 가족, 친구, 소중한 인물들과의 관계
+   - 좋아했던 일, 자주 했던 일, 특징적 성격
+   - 삶에 대한 태도나 철학
+
+출력은 3~5 문단 분량으로 구성하며, 마치 인물 소개서 또는 추모문처럼 진정성을 담아 정돈된 문장으로 작성하십시오.
+`;
+
+const openAiMessages = [
+  { role: 'system', content: systemPrompt },
+  ...messages.map((m) => ({
+    role: m.sender === 'bot' ? 'assistant' : 'user',
+    content: m.text,
+  })),
+];
+
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-3.5-turbo',
+      messages: openAiMessages,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[GPT-STORY ERROR]', errorText);
+    return NextResponse.json({ error: errorText }, { status: 500 });
+  }
+
+  const data = await response.json();
+  console.log("story:", data)
+  const story = data.choices?.[0]?.message?.content ?? '';
+  return NextResponse.json({ story });
+}

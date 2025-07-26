@@ -14,34 +14,19 @@ import { extend } from "@react-three/fiber";
 import useVideoTexture from "../hooks/useVideoTexture";
 // import { Html } from "next/document";
 import { Html } from "@react-three/drei";
+import { fetchUserData } from "../utils/firebaseDb";
+import { auth } from "../firebase/firebaseConfig";
+import { createcatsAndSubcats, setCatSubCat } from "../utils/createCatInfo";
 
 extend({ BeamGlowMaterial });
 
 // import { Select } from '@react-three/postprocessing';
 
-/** 카테고리 정의 */
-const categories = [
-  { name: "유년시절", start: 0, end: 16 },
-  { name: "특별한 경험", start: 17, end: 45 },
-  { name: "소중한 사람", start: 46, end: 99 },
-];
-// 새로운 하위 카테고리
-const subcategories = [
-  { name: "사랑하는 가족", start: 46, end: 63 }, // 18개
-  { name: "즐거운 친구들", start: 64, end: 81 }, // 18개
-  { name: "귀여운 초코", start: 82, end: 99 }, // 18개
-];
-function getSubcategoryForIndex(i) {
-  return subcategories.find((sub) => i >= sub.start && i <= sub.end);
-}
-
-/** 인덱스가 속한 카테고리 찾기 */
-function getCategoryForIndex(i) {
-  return categories.find((cat) => i >= cat.start && i <= cat.end);
-}
-
 function ImageRingComponent(
   {
+    person,
+    imageUrls,
+    videoUrls,
     forcedCategory, // 우선순위 카테고리
     forcedSubcategory, // ✅ 추가
     controlsRef,
@@ -83,6 +68,17 @@ function ImageRingComponent(
   );
   const [isMuted, setIsMuted] = useState(true);
   const [leftmostVideoElement, setLeftmostVideoElement] = useState(null);
+  const [categories, setCategories] = useState([
+    { name: "유년시절", start: 0, end: 16 },
+    { name: "소중한 경험", start: 17, end: 45 },
+    { name: "소중한 사람", start: 46, end: 99 },
+  ]);
+  const [subcategories, setSubcategories] = useState([
+    { name: "사랑하는 가족", start: 46, end: 63 }, // 18개
+    { name: "즐거운 친구들", start: 64, end: 81 }, // 18개
+    { name: "귀여운 초코", start: 82, end: 99 }, // 18개
+  ]);
+  const [idxTotal, setIdxTotal] = useState(100);
 
   function handleVolumeToggle() {
     if (!leftmostVideoElement) return;
@@ -92,37 +88,50 @@ function ImageRingComponent(
     setIsMuted(nextMute);
   }
 
-  /** 텍스처 로딩 */
-  const imagePaths = useMemo(() => {
-    return Array.from({ length: 10 }, (_, i) => `/images/image${i}.jpeg`);
-  }, []);
-  const videoPaths = useMemo(() => {
-    return Array.from({ length: 2 }, (_, i) => `/videos/video${i}.mp4`);
-  }, []);
-  // const videoTexture = useVideoTexture("/videos/video1.mp4");
-  const loadedImgTextures = useLoader(THREE.TextureLoader, imagePaths);
-  const [loadedVideoTextures, loadedVideoElements] =
-    useVideoTexture(videoPaths);
+  // ✅ 이미지 텍스처
+  const loadedImgTextures = useLoader(THREE.TextureLoader, imageUrls);
 
-  // 최종 텍스처 배열: 특정 인덱스만 영상으로 덮어씌움
+  // ✅ 비디오 텍스처
+  const [loadedVideoTextures, loadedVideoElements] = useVideoTexture(videoUrls);
+
+  // ✅ 최종 텍스처 배열 구성
   const textures = useMemo(() => {
-    const temp = [...loadedImgTextures];
-    if (loadedVideoTextures) {
-      temp[5] = loadedVideoTextures[0]; // ✅ 인덱스 5번만 영상으로 교체
-      temp[1] = loadedVideoTextures[1];
-    }
-    return temp;
+    const result = [...loadedImgTextures];
+    // 예시: 영상 일부만 적용
+    if (loadedVideoTextures.length > 0) result[1] = loadedVideoTextures[0];
+    if (loadedVideoTextures.length > 1) result[3] = loadedVideoTextures[1];
+    return result;
   }, [loadedImgTextures, loadedVideoTextures]);
 
+  async function setCatSubCat(person) {
+
+    const { total, cats, subcats } = await createcatsAndSubcats(
+      person.photoGallery
+    );
+    
+    console.log(cats, subcats);
+    await setCategories(cats);
+    await setSubcategories(subcats);
+    await setIdxTotal(total);
+  }
+
   useEffect(() => {
-    material.current = new BeamGlowMaterial({
-      uColor: new THREE.Color("white"),
-      opacity: 1,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-  }, []);
+    setCatSubCat(person);
+
+  }, [person]);
+  // console.log(categories)
+
+  function getSubcategoryForIndex(i) {
+    return subcategories.find((sub) => i >= sub.start && i <= sub.end);
+  }
+
+  /** 인덱스가 속한 카테고리 찾기 */
+  function getCategoryForIndex(i) {
+    return categories.find((cat) => i >= cat.start && i <= cat.end);
+  }
+
+  const imagePaths = useMemo(() => imageUrls, [imageUrls]);
+  const videoPaths = useMemo(() => videoUrls, [videoUrls]);
 
   useEffect(() => {
     textures.forEach((texture) => {
@@ -170,7 +179,7 @@ function ImageRingComponent(
     if (!leftmostImg) return;
 
     const isVideo = leftmostImg instanceof THREE.VideoTexture;
-    console.log(isVideo);
+    // console.log(isVideo);
     if (isVideo) {
       const index = textures.findIndex((t) => t === leftmostImg);
       console.log(index, loadedVideoElements);
@@ -183,19 +192,6 @@ function ImageRingComponent(
     }
   }, [leftmostImg, loadedVideoElements]);
 
-  // useEffect(() => {
-  //   if (!leftmostImg?.image || !geometryRef.current) return;
-
-  //   const { width, height } = leftmostImg.image;
-  //   const aspect = width / height;
-
-  //   const targetHeight = 100; // 고정 기준 높이
-  //   const targetWidth = targetHeight * aspect;
-
-  //   geometryRef.current.dispose(); // 이전 geometry 제거
-  //   geometryRef.current = new THREE.PlaneGeometry(targetWidth, targetHeight);
-  //   spriteRef.current.geometry = geometryRef.current;
-  // }, [leftmostImg]);
   useEffect(() => {
     if (!leftmostImg || !spriteRef.current || !camera) return;
 
@@ -270,12 +266,12 @@ function ImageRingComponent(
         rotation={[0, -angle, 0]} // 이부분
         onClick={(e) => {
           e.stopPropagation();
-          onImageClick?.(imagePaths[j % 10]);
+          onImageClick?.(j > idxTotal ? imagePaths[j] : null);
         }}
       >
         <planeGeometry args={[100, 75]} />
         <meshLambertMaterial
-          map={textures[j % 10]}
+          map={j < idxTotal ? textures[j] : null}
           side={THREE.DoubleSide}
           transparent
           opacity={1}
@@ -301,7 +297,7 @@ function ImageRingComponent(
       return;
     }
 
-    if (!forcedCategory) {
+    if (!forcedCategory && !forcedSubcategory) {
       console.log("✅ forcedCategory is null → 회전 제약 해제");
       controlsRef.current.minAzimuthAngle = -Infinity;
       controlsRef.current.maxAzimuthAngle = Infinity;
@@ -491,7 +487,9 @@ function ImageRingComponent(
 
     // 원래 위치에서 방향 벡터로 밀기
     const origPos = positionsRef.current[candidateIndex];
-    const offset = direction.clone().multiplyScalar(60); // 30 정도 앞으로
+    const scalar = candidateIndex > idxTotal ? 0 : 60;
+    const offset = direction.clone().multiplyScalar(scalar); // 30 정도 앞으로
+
     candidate.position.set(
       origPos.x + offset.x,
       0, // 높이 추가
@@ -511,7 +509,7 @@ function ImageRingComponent(
     }
 
     const subcat = getSubcategoryForIndex(candidateIndex);
-    if (cat?.name === "소중한 사람" && subcat) {
+    if (cat?.name !== "유년시절" && subcat) {
       // subcategory 전달
       onSubcategoryChange?.(subcat.name);
     } else {
@@ -542,7 +540,8 @@ function ImageRingComponent(
     // if (!forcedCategory) {
     // 왼쪽 메시 경로
     // console.log("no forcedcategory");
-    const pathIndex = candidateIndex % 10;
+    const pathIndex = candidateIndex < idxTotal ? candidateIndex : 0;
+    // console.log(pathIndex)
     onLeftmostChange?.(imagePaths[pathIndex]);
     onCategoryChange?.(cat?.name);
     setLeftmostImg(textures[pathIndex]);
@@ -819,7 +818,7 @@ function ImageRingComponent(
     updateLeftmost,
   }));
 
-  console.log(leftmostVideoElement, geometryRef.current);
+  // console.log(leftmostVideoElement, geometryRef.current);
 
   return (
     <>
@@ -833,7 +832,10 @@ function ImageRingComponent(
           ]}
           center
         >
-          <button style={{ cursor: "pointer", color:"white" }} onClick={handleVolumeToggle}>
+          <button
+            style={{ cursor: "pointer", color: "white" }}
+            onClick={handleVolumeToggle}
+          >
             {isMuted ? "unmuted" : "muted"}
           </button>
         </Html>
