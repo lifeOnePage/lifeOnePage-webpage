@@ -11,11 +11,16 @@ export default function Profile({
   userId,
   isPreview,
   profileHasUnsavedChanges,
-  setProfileHasUnsavedChanges
+  setProfileHasUnsavedChanges,
+  onUrlChange,
+  onFileChange,
+  file,
+  url,
 }) {
-  const [bgImage, setBgImage] = useState("/images/portrait.jpg");
+  // const [
+  // , onUrlChange] = useState("/images/portrait.jpg");
   const [hovered, setHovered] = useState(false);
-  const [file, setFile] = useState(null);
+  // const [file, onFileChange] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef();
 
@@ -23,7 +28,7 @@ export default function Profile({
     console.log(person);
     if (!person.profileImageUrl) return;
 
-    setBgImage(person.profileImageUrl);
+    onUrlChange(person.profileImageUrl);
   }, [person]);
 
   useEffect(() => {
@@ -38,9 +43,9 @@ export default function Profile({
   const handleImageSelect = (e) => {
     const selected = e.target.files[0];
     if (selected) {
-      setFile(selected);
+      onFileChange(selected);
       const url = URL.createObjectURL(selected);
-      setBgImage(url);
+      onUrlChange(url);
     }
     setProfileHasUnsavedChanges(true);
   };
@@ -73,7 +78,8 @@ export default function Profile({
       }}
     >
       {/* 흐릿한 배경 이미지 레이어 */}
-      {/* {bgImage && (
+      {/* {
+       && (
         <div
           style={{
             position: "absolute",
@@ -231,7 +237,6 @@ export default function Profile({
             maxWidth: "768px",
             height: "100vh",
             position: "relative",
-            border: hovered ? "4px solid #7f1d1d" : "none",
             transition: "border 0.3s ease",
             overflow: "hidden",
             cursor: isPreview ? "default" : "pointer",
@@ -239,48 +244,48 @@ export default function Profile({
           }}
         >
           {/* 저장 버튼 (미리보기 모드에서는 숨김) */}
-        {!isPreview &&
-          (profileHasUnsavedChanges ? (
-            <button
-              onClick={handleSaveClick}
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                zIndex: 10,
-                backgroundColor: "#7f1d1d",
-                color: "#fff",
-                border: "none",
-                borderRadius: "10px",
-                padding: "8px 16px",
-                cursor: "pointer",
-              }}
-            >
-              저장
-            </button>
-          ) : (
-                        <div
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                zIndex: 10,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                backgroundColor:"#00000022",
-                borderRadius:"20px",
-                padding:"4px 10px"
-              }}
-            >
-              <FiCheckCircle color={MAIN_THEME} />
-              <span style={{ fontSize: "0.9rem", color: "#ffffff" }}>
-                모든 변경사항이 저장되었습니다
-              </span>
-            </div>
-          ))}
+          {/* {!isPreview &&
+            (profileHasUnsavedChanges ? (
+              <button
+                onClick={handleSaveClick}
+                style={{
+                  position: "absolute",
+                  top: "20px",
+                  right: "20px",
+                  zIndex: 10,
+                  backgroundColor: "#7f1d1d",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                }}
+              >
+                저장
+              </button>
+            ) : (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "20px",
+                  right: "20px",
+                  zIndex: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  backgroundColor: "#00000022",
+                  borderRadius: "20px",
+                  padding: "4px 10px",
+                }}
+              >
+                <FiCheckCircle color={MAIN_THEME} />
+                <span style={{ fontSize: "0.9rem", color: "#ffffff" }}>
+                  모든 변경사항이 저장되었습니다
+                </span>
+              </div>
+            ))} */}
           <Image
-            src={bgImage}
+            src={url}
             alt="Portrait"
             fill
             objectFit="cover"
@@ -488,7 +493,7 @@ export default function Profile({
               />
 
               {/* 텍스트 내용 */}
-              <div style={{ zIndex: 10, width: "100%", maxWidth: "100vw" }}>
+              <div style={{ zIndex: 10, width: "100%", maxWidth: "100vw",padding:10, borderRadius:10, backgroundColor:isPreview ? "#ffffff00" : "#ffffff55" }}>
                 <div style={{ marginBottom: "8px" }}>
                   {!isPreview && (
                     <p
@@ -506,10 +511,10 @@ export default function Profile({
                     type="text"
                     value={person.name}
                     readOnly={isPreview}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setProfileHasUnsavedChanges(true);
-                      onPersonChange({ ...person, name: e.target.value })}
-                    }
+                      onPersonChange({ ...person, name: e.target.value });
+                    }}
                     style={{
                       fontSize: "1.8rem",
                       lineHeight: "2.5rem",
@@ -543,10 +548,10 @@ export default function Profile({
                     type="text"
                     value={person.birthDate}
                     readOnly={isPreview}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setProfileHasUnsavedChanges(true);
-                      onPersonChange({ ...person, birthDate: e.target.value })}
-                    }
+                      onPersonChange({ ...person, birthDate: e.target.value });
+                    }}
                     style={{
                       fontSize: "1.1rem",
                       fontWeight: 500,
@@ -579,10 +584,10 @@ export default function Profile({
                     type="text"
                     value={person.birthPlace}
                     readOnly={isPreview}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setProfileHasUnsavedChanges(true);
-                      onPersonChange({ ...person, birthPlace: e.target.value })}
-                    }
+                      onPersonChange({ ...person, birthPlace: e.target.value });
+                    }}
                     style={{
                       fontSize: "1.1rem",
                       fontWeight: 500,
@@ -614,10 +619,10 @@ export default function Profile({
                     type="text"
                     value={person.motto}
                     readOnly={isPreview}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setProfileHasUnsavedChanges(true);
-                      onPersonChange({ ...person, motto: e.target.value })}
-                    }
+                      onPersonChange({ ...person, motto: e.target.value });
+                    }}
                     style={{
                       fontSize: "1.1rem",
                       fontWeight: 500,

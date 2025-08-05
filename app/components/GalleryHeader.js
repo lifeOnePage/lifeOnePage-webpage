@@ -2,6 +2,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useUnsavedChanges } from "../contexts/UnsavedChangesContext";
 import { FiSmile, FiStar, FiUsers } from "react-icons/fi";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useUser } from "../contexts/UserContext";
 
 export default function GalleryHeader() {
   const { hasUnsavedChanges } = useUnsavedChanges();
@@ -12,6 +13,7 @@ export default function GalleryHeader() {
   const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
   const containerRef = useRef(null);
   const tabRefs = useRef({});
+  const { user, initialData } = useUser();
 
   const categories = [
     { key: "childhood", label: "유년시절", icon: <FiSmile size={20} /> },
@@ -78,7 +80,7 @@ export default function GalleryHeader() {
       }}
     >
       <button
-        onClick={() => router.push("/memorial")}
+        onClick={() => router.push(`/${initialData.username}`)}
         style={{
           background: "none",
           border: "none",

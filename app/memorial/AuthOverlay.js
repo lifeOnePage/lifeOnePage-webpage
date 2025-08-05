@@ -12,11 +12,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { fetchUserData } from "../utils/firebaseDb";
 import { useUser } from "../contexts/UserContext";
 
-export default function AuthOverlay({
-  auth,
-  firestore,
-  onAuthComplete,
-}) {
+export default function AuthOverlay({ auth, firestore, onAuthComplete }) {
   const [mode, setMode] = useState("login");
   const [step, setStep] = useState("phone");
   const [phone, setPhone] = useState("");
@@ -28,20 +24,9 @@ export default function AuthOverlay({
   const { setUser, setInitialData, setDataLoading } = useUser();
 
   useEffect(() => {
-    const containerId = "recaptcha-container";
-
-    const existing = document.getElementById(containerId);
-    if (existing) existing.innerHTML = "";
-
-    setTimeout(() => setupRecaptcha(containerId), 0);
-
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        delete window.recaptchaVerifier;
-      }
-    };
+    setupRecaptcha("recaptcha-container");
   }, []);
+
   useEffect(() => {
     setDataLoading(true);
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -138,7 +123,26 @@ export default function AuthOverlay({
           textAlign: "center",
         }}
       >
-        <h2 style={{ color: "white", fontWeight: "600" }}>LifeOnePage</h2>
+        <h2
+          style={{
+            color: "white",
+            fontSize: "1.5rem",
+            fontWeight: "600",
+            marginBottom: 10,
+          }}
+        >
+          Life Archive
+        </h2>
+        <h2
+          style={{
+            color: "white",
+            fontSize: "1rem",
+            fontWeight: "600",
+            marginBottom: 30,
+          }}
+        >
+          시작하기 위해 로그인해주세요
+        </h2>
 
         {step === "phone" && (
           <>

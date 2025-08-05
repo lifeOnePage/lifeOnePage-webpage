@@ -10,8 +10,11 @@ import TabPlanePictogram from "./TabPlanePictogram"
 export default function SelectModal({ type, isOpen, onClose, onStart }) {
   const [selected, setSelected] = useState(type);
   const [isClosing, setIsClosing] = useState(false);
-  
+  console.log(selected)
   const modalRef = useRef(null);
+  useEffect(() => {
+  setSelected(type);
+}, [type]);
 
   // 모달 바깥 클릭 감지
   useEffect(() => {
@@ -119,13 +122,13 @@ export default function SelectModal({ type, isOpen, onClose, onStart }) {
             >
               {selected === type && type === "card" && (
                 <div>
-                  {/* 탭플레인 오브젝트와 유사한 2D 픽토그램, 보더라인 카드에서 인덱스가 뿅뿅 솟아나오는 애니메이션 */}
+                  
                   <TabPlanePictogram />
                 </div>
               )}
               {selected === type && type === "page" && (
                 <div>
-                  {/* 이미지링 오브젝트와 유사한 2D 픽토그램, 도넛링을 이루는 플레인들이 한바퀴 빙그르르 도는 애니메이션*/}
+                  
                   <RingPictogram />
                 </div>
               )}

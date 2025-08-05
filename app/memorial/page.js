@@ -78,7 +78,7 @@ export default function MemorialPageWrapper() {
         </button>
       )}
 
-      <MemorialPage user={user} initialData={initialData} />
+      <MemorialPage uid={user?.uid} initialData={initialData} />
       {authlayerVisible && showAuth && (
         <AuthOverlay
           auth={auth}

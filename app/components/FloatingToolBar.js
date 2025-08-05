@@ -1,26 +1,81 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  FiEye,
+  FiEyeOff,
+  FiMaximize2,
+  FiMinimize,
+  FiMinimize2,
+  FiSave,
+} from "react-icons/fi";
+import {
+  FaAngleDown,
+  FaAngleUp,
+  FaChevronDown,
+  FaChevronUp,
+} from "react-icons/fa";
+import {
+  IoIosArrowBack,
+  IoIosArrowDown,
+  IoIosArrowForward,
+  IoIosArrowUp,
+  IoIosLogOut,
+  IoMdCheckmarkCircleOutline,
+} from "react-icons/io";
+import { MdOutlineManageAccounts } from "react-icons/md";
+import { useRouter } from "next/navigation";
 
 export default function FloatingToolbar({
+  person,
+  userId,
   onScrollUp,
   onScrollDown,
   isTop,
   isBottom,
-  onSaveAll,
+  onSave,
   onLogout,
   isPreview,
   setIsPreview,
+  isUpdated,
+  file,
+  url,
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [hovered, setHovered] = useState(null);
 
+  const contStyle = {
+    position: "relative",
+    display: "inline-block",
+    margin: "auto",
+  };
+  const style = {
+    position: "absolute",
+    bottom: "150%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    color: "white",
+    padding: "6px 10px",
+    fontSize: "12px",
+    borderRadius: "4px",
+    whiteSpace: "nowrap",
+    zIndex: 10,
+  };
+  const router = useRouter(); 
+  const onClickMypage = () => {
+    if (isUpdated) alert("저장되지 않은 변경사항이 있습니다.");
+    else {
+      router.push(`/`);
+    }
+  };
   return (
     <motion.div
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       style={{
         position: "fixed",
-        bottom: 30,
+        bottom: 60,
         left: 0,
         width: "100vw",
         display: "flex",
@@ -29,55 +84,147 @@ export default function FloatingToolbar({
         pointerEvents: "none", // 툴바가 아닌 공간은 클릭 안되도록
       }}
     >
-      <div
+      <motion.div
+        animate={{ width: collapsed ? 68 : "auto" }}
+        transition={{ duration: 0.3 }}
         style={{
-          pointerEvents: "auto", // 버튼 클릭 가능하게
+          pointerEvents: "auto",
           background: "#1a1a1a",
-          padding: collapsed ? "8px 12px" : "16px 24px",
+          padding: "10px 24px",
           borderRadius: "30px",
           color: "#fff",
           display: "flex",
           alignItems: "center",
-          gap: "10px",
+          gap: "30px",
           boxShadow: "0px 4px 16px rgba(0,0,0,0.4)",
-          transition: "all 0.3s ease",
+          // overflow: "hidden", // 너비 줄 때 내부 잘리도록
         }}
       >
         {/* 접기/펼치기 */}
-        <button onClick={() => setCollapsed(!collapsed)}>
-          {collapsed ? "펼치기" : "접기"}
-        </button>
+        <div
+          style={contStyle}
+          onMouseEnter={() => setHovered(collapsed ? "minimize" : "maximize")}
+          onMouseLeave={() => setHovered(false)}
+        >
+          {/* 안내 문구 (호버 시 표시) */}
+          {hovered === "minimize" ||
+            (hovered === "maximize" && (
+              <div style={style}>{collapsed ? "툴바 펼치기" : "툴바 접기"}</div>
+            ))}
+          <button
+            style={{ cursor: "pointer" }}
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            {collapsed ? <IoIosArrowForward size={20} /> : <IoIosArrowBack  size={20} />}
+          </button>
+        </div>
 
         <AnimatePresence>
           {!collapsed && (
             <>
-              {!isPreview && (
-                <button
-                  onClick={onScrollUp}
-                  disabled={isTop}
-                  style={{ opacity: isTop ? 0.3 : 1 }}
-                >
-                  위로
-                </button>
+              {[
+                // {
+                //   key: "up",
+                //   onClick: onScrollUp,
+                //   icon: <IoIosArrowUp size={20} />,
+                //   disabled: isTop,
+                // },
+                // {
+                //   key: "down",
+                //   onClick: onScrollDown,
+                //   icon: <IoIosArrowDown size={20} />,
+                //   disabled: isBottom,
+                // },
+                {
+                  key: "mypage",
+                  onClick: onClickMypage,
+                  icon: <MdOutlineManageAccounts size={20} />,
+                  disabled: isUpdated,
+                },
+                {
+                  key: "preview",
+                  onClick: () => setIsPreview(!isPreview),
+                  icon: isPreview ? (
+                    <FiEyeOff size={20} />
+                  ) : (
+                    <FiEye size={20} />
+                  ),
+                },
+                {
+                  key: "save",
+                  onClick: () =>
+                    onSave({
+                      person,
+                      file,
+                      storagePath: `users/${userId}/profile.jpg`,
+                      type: "all",
+                    }),
+                  icon: isUpdated ? (
+                    <FiSave size={20} />
+                  ) : (
+                    <IoMdCheckmarkCircleOutline size={20} />
+                  ),
+                  disabled: !isUpdated,
+                },
+                {
+                  key: "logout",
+                  onClick: onLogout,
+                  icon: <IoIosLogOut size={20} />,
+                },
+              ].map(
+                (item, i) =>
+                  (!item.condition ?? true) && (
+                    <motion.div
+                      key={item.key}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ delay: i * 0.05, duration: 0.2 }}
+                      style={contStyle}
+                      onMouseEnter={() => setHovered(item.key)}
+                      onMouseLeave={() => setHovered(false)}
+                    >
+                      {hovered === item.key && (
+                        <div style={style}>
+                          {item.key === "preview"
+                            ? isPreview
+                              ? "클릭하여 편집"
+                              : "클릭하여 미리보기"
+                            : item.key === "up"
+                            ? "위로"
+                            : item.key === "down"
+                            ? "아래로"
+                            : item.key === "mypage"
+                            ? "계정 설정"
+                            : item.key === "save" && isUpdated
+                            ? "저장하려면 클릭하세요"
+                            : item.key === "save" && !isUpdated
+                            ? "모든 변경사항이 저장되었어요"
+                            : item.key === "logout"
+                            ? "로그아웃"
+                            : ""}
+                        </div>
+                      )}
+                      <button
+                        onClick={item.onClick}
+                        disabled={item.disabled}
+                        style={{
+                          opacity: item.disabled ? 0.3 : 1,
+                          cursor: item.disabled ? "default" : "pointer",
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                        }}
+                      >
+                        {item.icon}
+                      </button>
+                    </motion.div>
+                  )
               )}
-              {!isPreview && (
-                <button
-                  onClick={onScrollDown}
-                  disabled={isBottom}
-                  style={{ opacity: isBottom ? 0.3 : 1 }}
-                >
-                  아래로
-                </button>
-              )}
-              <button onClick={() => setIsPreview(!isPreview)}>
-                {isPreview ? "미리보기 해제" : "미리보기"}
-              </button>
-              {!isPreview && <button onClick={onSaveAll}>전체 저장</button>}
-              {!isPreview && <button onClick={onLogout}>로그아웃</button>}
             </>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
