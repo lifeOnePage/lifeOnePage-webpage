@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export default function RingPictogram() {
+export default function RingPictogram({size}) {
   const [start, setStart] = useState(false);
   useEffect(() => {
     const timeout = setTimeout(() => setStart(true), 100); // 약간의 지연 후 시작
@@ -18,7 +18,7 @@ export default function RingPictogram() {
         margin: "20px 0px",
         position: "relative",
         width: 160,
-        height: 100,
+        height:size ? size/1.6 : 100,
         perspective: 400,
       }}
     >

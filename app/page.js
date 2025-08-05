@@ -12,6 +12,7 @@ import { auth, firestore } from "./firebase/firebaseConfig";
 import AuthOverlay from "./memorial/AuthOverlay";
 import { useRouter } from "next/navigation";
 import { useUser } from "./contexts/UserContext";
+import { view } from "framer-motion";
 
 // SceneWrapper는 R3F 기반 3D 컴포넌트
 const Main3FGraphic = dynamic(() => import("./components/Main3FGraphic"), {
@@ -35,12 +36,15 @@ export default function Home() {
   const [type, setType] = useState("card");
   const router = useRouter();
 
-  const handleScrollToPreview = () => {
+  const handleScrollToPreview = (viewType) => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
+    setType(viewType ?? "card");
+    setSelectedPreview(viewType ?? "card");
   };
   const handleSelected = (newPreview) => {
+    console.log(newPreview);
     setSelectedPreview(newPreview);
     setType(newPreview);
   };
@@ -50,7 +54,8 @@ export default function Home() {
     setIsSelectModalOpen(false);
   };
   const handleEdit = (type) => {
-    router.push(`/${type === "card" ? "card" : "memorial"}`);
+    console.log(user);
+    router.push(`/${type === "card" ? "card" : initialData.username}`);
   };
 
   useEffect(() => {
@@ -66,7 +71,7 @@ export default function Home() {
     };
   }, []);
 
-  console.log(user, initialData, dataLoading);
+  // console.log(user, initialData, dataLoading);
   if (loading) {
     return (
       <div style={{ textAlign: "center", padding: "40px" }}>불러오는 중...</div>
@@ -84,7 +89,10 @@ export default function Home() {
     >
       {/* 3D 영역 */}
       <div style={{ height: "100vh", position: "relative" }}>
-        <Main3FGraphic onPreviewRequest={handleScrollToPreview} />
+        <Main3FGraphic
+          onPreviewRequest={(v) => handleScrollToPreview(v)}
+          initialData={initialData}
+        />
       </div>
 
       {/* Sticky 감지용 포인트 */}
@@ -96,7 +104,7 @@ export default function Home() {
           style={{
             position: isSticky ? "sticky" : "relative",
             top: 0,
-            zIndex: 1000,
+            zIndex: 1100,
             background: "black",
             borderBottom: "1px solid #333",
           }}
@@ -107,7 +115,7 @@ export default function Home() {
           />
         </div>
 
-        <div style={{}}>
+        <div>
           {selectedPreview === "card" && <div>카드 포맷 미리보기 컴포넌트</div>}
           {selectedPreview === "page" && (
             <div>
@@ -131,7 +139,7 @@ export default function Home() {
             height: 60,
             fontSize: "1.25rem",
             bottom: isSticky ? "30px" : "calc(200vh + 120px)",
-            zIndex: 300,
+            zIndex: 2000,
             background: MAIN_THEME,
             borderBottom: "1px solid #333",
           }}

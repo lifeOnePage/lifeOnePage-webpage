@@ -29,25 +29,11 @@ import SuccessOverlay from "../components/SuccessOverlay";
 import GalleryNav from "../components/GalleryNav";
 import { useRouter } from "next/navigation";
 import { BLACK } from "../styles/colorConfig";
+import { Timestamp } from "firebase/firestore";
+import { FiEyeOff } from "react-icons/fi";
+import { useUser } from "../contexts/UserContext";
 
-const profilePath = "/images/portrait.jpg";
-const svgGraphic = "/graphic.svg";
-const p = 10;
-const xf = -300;
-const f = -200;
-const mf = -100;
-const mn = 100;
-const n = 200;
-const xn = 300;
-function scaleFactor(transZ, perspective) {
-  const scaleRecover = 1 + (transZ * -1) / perspective;
-  // console.log(scaleRecover)
-  return scaleRecover;
-}
-const parallexTransform = (factor, perspective) =>
-  `translate3d(0,0,${factor}px) scale(${scaleFactor(factor, perspective)})`;
-
-const MemorialPage = ({ user, initialData }) => {
+const MemorialPage = ({ uid, initialData, isMe }) => {
   const defaultPerson = {
     name: "한정순",
     birthDate: "1920.01.01 - 2020.12.31",
@@ -71,6 +57,29 @@ const MemorialPage = ({ user, initialData }) => {
     useState(false);
   const [LifeStoryHasUnsavedChanges, setLifeStoryHasUnsavedChanges] =
     useState(false);
+  const [leftmostPath, setLeftmostPath] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [activeSubCategory, setActiveSubCategory] = useState(null);
+  const [forcedCategory, setForcedCategory] = useState(null);
+  const [forcedSubcategory, setForcedSubcategory] = useState(null);
+  const [atTop, setAtTop] = useState(true);
+  const [atBottom, setAtBottom] = useState(false);
+  const [showAuthOverlay, setShowAuthOverlay] = useState(true);
+  const [selectedImage, setSelectedImage] = useState("/images/img3.png");
+  const [isOpen, setIsOpen] = useState(true);
+  const [isRotating, setIsRotating] = useState(false);
+  const [isUpdated, setIsUpdated] = useState(false);
+  const [profileUrl, setProfileUrl] = useState("/images/portrait.jpg");
+  const [profileFile, setProfileFile] = useState(null);
+
+  const topImageRef = useRef();
+  const controlsRef = useRef(null);
+  const ringRef = useRef();
+
+  const { setDataLoading } = useUser();
+
+  const { width, height } = useWindowSize();
+
   const imagePaths = useMemo(() => {
     return Array.from({ length: 100 }, (_, i) => `/images/image${i % 10}.jpeg`);
   }, []);
@@ -136,10 +145,15 @@ const MemorialPage = ({ user, initialData }) => {
       relationship: profile.relationship ?? defaultPerson.relationship,
       photoGallery: gallery ?? null,
     });
+    setDataLoading(false);
+    if (!isMe) return;
+
     setIsBeforeLogin(false);
+    setIsPreview(false);
   }, [initialData]);
 
   const handlePersonChange = (updatedPerson) => {
+    setIsUpdated(true);
     setPerson(updatedPerson);
   };
 
@@ -157,23 +171,35 @@ const MemorialPage = ({ user, initialData }) => {
 
       // 🔸 Firestore용 데이터 준비
       const profileData = {
-        name: person.name,
-        birthDate: person.birthDate,
-        birthPlace: person.birthPlace,
-        motto: person.motto,
-        story: person.lifeStory,
-        threadId: person.threadId,
+        ...(initialData.profile.name !== person.name && { name: person.name }),
+        ...(initialData.profile.birthDate !== person.birthDate && {
+          birthDate: person.birthDate,
+        }),
+        ...(initialData.profile.birthPlace !== person.birthPlace && {
+          birthPlace: person.birthPlace,
+        }),
         ...(profileImageUrl && { profileImageUrl }),
       };
-
+      console.log(initialData.lifestory);
+      console.log(person)
+      console.log(initialData.lifestory !== person)
+      const storyData = {
+        ...(initialData.lifestory?.motto !== person.motto && {
+          motto: person.motto,
+        }),
+        ...(initialData.lifestory?.story !== person.lifeStory && {
+          story: person.lifeStory,
+        }),
+      };
+      
       // 🔸 각 섹션별 저장
-      if (type === "profile" || type === "all") {
+      if ((type === "profile" || type === "all") && profileData) {
         await saveProfileSection(user.uid, profileData);
       }
-      if (type === "lifestory" || type === "all") {
-        await saveLifestorySection(user.uid, profileData);
+      if ((type === "lifestory" || type === "all") && storyData) {
+        await saveLifestorySection(user.uid, storyData);
       }
-      if ((type === "gallery" || type === "all") && galleryData) {
+      if (type === "gallery" && galleryData) {
         const processedGallery = {};
         for (const category in galleryData) {
           const files = galleryData[category].map((item) => item.file);
@@ -192,24 +218,12 @@ const MemorialPage = ({ user, initialData }) => {
       }
 
       setShowSuccessOverlay(true);
+      setIsUpdated(false);
       console.log("저장 완료");
     } catch (error) {
       console.error("저장 실패:", error);
     }
   }
-
-  const controlsRef = useRef(null);
-  const [showAuthOverlay, setShowAuthOverlay] = useState(true);
-  const [selectedImage, setSelectedImage] = useState("/images/img3.png");
-
-  const [isOpen, setIsOpen] = useState(true);
-
-  const { width, height } = useWindowSize();
-  // “내가 클릭해서 강제로 보여주는 카테고리” (우선순위)
-  // const [forcedCategory, setForcedCategory] = useState(null);
-
-  const [isRotating, setIsRotating] = useState(false);
-  const topImageRef = useRef();
 
   // 뷰포트가 가로가 더 길면(true = landscape),
   // 세로에 맞춰서 보여줌(height: 100vh, width: auto)
@@ -217,22 +231,7 @@ const MemorialPage = ({ user, initialData }) => {
   const isLandscape = width > height;
 
   const isSmallScreen = width < 768; // 가로폭 500px 이하 여부
-  const isSceneOffset = width < 768; // 가로폭 500px 이하 여부
-  const threeSceneOffset = isSceneOffset ? "30vw" : "200px";
 
-  const imageStyle = isSmallScreen
-    ? {
-        width: isLandscape ? "auto" : "80vw",
-        height: "200px",
-
-        objectFit: "cover",
-      }
-    : {
-        width: isLandscape ? "auto" : "80vw",
-        height: isLandscape ? "80vh" : "auto",
-        maxHeight: "500px",
-        objectFit: "cover",
-      };
   const leftPaneStyle = isSmallScreen
     ? {
         position: "relative",
@@ -248,12 +247,6 @@ const MemorialPage = ({ user, initialData }) => {
         // transform: imageTransformValue,
         transition: "transform 0.5s ease",
       };
-
-  const [leftmostPath, setLeftmostPath] = useState(null);
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [activeSubCategory, setActiveSubCategory] = useState(null);
-  const [forcedCategory, setForcedCategory] = useState(null);
-  const [forcedSubcategory, setForcedSubcategory] = useState(null);
 
   function handleLockCategory(catName) {
     ringRef.current?.goToCategory(catName);
@@ -295,6 +288,7 @@ const MemorialPage = ({ user, initialData }) => {
     setIsOpen(true); // 이미지 창 오픈
   };
 
+  //스크롤값 감지
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
@@ -306,43 +300,16 @@ const MemorialPage = ({ user, initialData }) => {
 
   // threefiber 씬 스타일
   const rightPaneStyle = {
-    position: "relative", // 필요에 따라 조정
+    position: "relative",
     // width: isSmallScreen ? "1200px" : "120vw",
     width: "100vw",
     minWidth: "1200px",
     height: "100vh",
     overflow: "scroll",
-
-    // isOpen이면 오른쪽으로 100px 살짝 이동
-    // transform: isSmallScreen ? "translateY(40%)" : null,
     transition: "all 0.5s ease",
   };
 
-  // < 버튼 스타일 (이미지가 열려있을 때만 표시)
-  const arrowButtonStyle = {
-    position: "absolute",
-    top: "20px",
-    right: "20px",
-    // zIndex: 200,
-    background: "#fff",
-    border: "1px solid #ccc",
-    borderRadius: "50%",
-    width: "40px",
-    height: "40px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "20px",
-    opacity: isOpen ? 1 : 0,
-    pointerEvents: isOpen ? "auto" : "none",
-    transition: "opacity 0.3s ease",
-  };
-
-  const ringRef = useRef();
-  // 어느 카테고리가 현재 활성화(왼쪽)인지
-  const [activeCat, setActiveCat] = useState(null);
-
+  //스크롤값 섹션 감지
   useEffect(() => {
     const onScroll = () => {
       setAtTop(isAtTop());
@@ -352,17 +319,14 @@ const MemorialPage = ({ user, initialData }) => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const [atTop, setAtTop] = useState(true);
-  const [atBottom, setAtBottom] = useState(false);
-
-  // 섹션 기준 스크롤 이동
+  // 섹션 기준 스크롤 위로 이동
   const handleScrollUp = () => {
     const vh = window.innerHeight;
     const current = window.scrollY;
     const target = Math.max(0, Math.floor(current / vh - 1) * vh);
     window.scrollTo({ top: target, behavior: "smooth" });
   };
-
+  // 섹션 기준 스크롤 아래로 이동
   const handleScrollDown = () => {
     const vh = window.innerHeight;
     const current = window.scrollY;
@@ -413,7 +377,6 @@ const MemorialPage = ({ user, initialData }) => {
       ringRef.current.goToCategory(catName);
     }
   }
-
   // ring에서 "현재 왼쪽 카테고리" 바뀔 때
   function handleCategoryChange(catName) {
     if (forcedCategory && catName !== forcedCategory) {
@@ -421,7 +384,6 @@ const MemorialPage = ({ user, initialData }) => {
     }
     setActiveCategory(catName);
   }
-  console.log(isBeforeLogin, isPreview);
 
   return (
     <div
@@ -429,18 +391,24 @@ const MemorialPage = ({ user, initialData }) => {
         position: "relative",
         fontFamily: "pretendard",
         backgroundColor: BLACK,
+        zIndex:1000,
       }}
     >
       {!isBeforeLogin && (
         <FloatingToolbar
+          person={person}
+          userId={uid}
+          file={profileFile}
+          url={profileUrl}
           onScrollUp={handleScrollUp}
           onScrollDown={handleScrollDown}
           isTop={atTop}
           isBottom={atBottom}
-          onSaveAll={handleSaveAll}
+          onSave={handleSave}
           onLogout={handleLogout}
           isPreview={isPreview}
           setIsPreview={setIsPreview}
+          isUpdated={isUpdated}
         />
       )}
 
@@ -453,6 +421,12 @@ const MemorialPage = ({ user, initialData }) => {
         <div
           style={{
             position: "fixed",
+            minWidth: 280,
+            maxWidth: 500,
+            width: "60vw",
+            textAlign: "center",
+            alignItems: "center",
+            justifyContent: "center",
             top: "20px",
             left: "50%",
             transform: "translateX(-50%)",
@@ -460,11 +434,17 @@ const MemorialPage = ({ user, initialData }) => {
             backgroundColor: "#00000099",
             color: "#fff",
             borderRadius: "8px",
-            padding: "8px 16px",
+            padding: "10px 16px",
             fontWeight: "400",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 10,
           }}
         >
-          미리보기 중이에요. 편집으로 돌아가려면 미리보기 해제를 클릭해주세요
+          미리보기 중이에요.{" "}
+          <div style={{ display: "flex", gap: 10 }}>
+            <FiEyeOff size={20} />를 눌러 편집을 계속할 수 있어요
+          </div>
         </div>
       )}
       <div
@@ -483,20 +463,24 @@ const MemorialPage = ({ user, initialData }) => {
           person={person}
           onPersonChange={handlePersonChange}
           onSave={handleSave}
-          userId={user?.uid}
+          userId={uid}
           isPreview={isPreview}
           profileHasUnsavedChanges={profileHasUnsavedChanges}
           setProfileHasUnsavedChanges={(b) => setProfileHasUnsavedChanges(b)}
+          onUrlChange={(u) => setProfileUrl(u)}
+          onFileChange={(f) => setProfileFile(f)}
+          file={profileFile}
+          url={profileUrl}
         />
         <Lifestory
           person={person}
           onPersonChange={handlePersonChange}
           onSave={handleSave}
-          userId={user?.uid}
+          userId={uid}
           isPreview={isPreview}
           LifeStoryHasUnsavedChanges={LifeStoryHasUnsavedChanges}
           setLifeStoryHasUnsavedChanges={(b) =>
-            setLifeStoryHasUnsavedChanges(b)
+            setIsUpdated(b)
           }
         />
 
@@ -528,7 +512,10 @@ const MemorialPage = ({ user, initialData }) => {
             >
               {!isBeforeLogin && !isPreview && (
                 <button
-                  onClick={() => router.push("/gallery")}
+                  onClick={() => {
+                    if (isUpdated) alert("아직 저장되지 않은 변경사항이 있어요. 저장하시겠어요?")
+                    router.push("/gallery");
+                  }}
                   style={{
                     position: "absolute",
                     top: 20,
@@ -538,7 +525,8 @@ const MemorialPage = ({ user, initialData }) => {
                     color: "#fff",
                     border: "none",
                     borderRadius: "6px",
-                    zIndex: 1000,
+                    zIndex: 2000,
+                    cursor: "pointer",
                   }}
                 >
                   갤러리 편집
@@ -548,47 +536,16 @@ const MemorialPage = ({ user, initialData }) => {
                 <div
                   style={{
                     color: "#fefefe",
-                    // padding: isSmallScreen ? " 30px 15px" : "3vw 5vw 0vw 5vw",
                     padding: "50px 20px",
                   }}
                 >
                   <strong style={{ color: "#fefefe", fontSize: "1.8rem" }}>
                     {person.name}님의 영상기록관
                   </strong>
-                  {/* <p
-                    style={{
-                      color: "#fefefe",
-                      fontSize: "1rem",
-                      marginTop: "20px",
-                    }}
-                  >
-                    {person.name}님이 살아온 삶을 사진을 통해 돌아보세요.
-                  </p> */}
                 </div>
               </div>
               {/* 2) ThreeFiberScene (오른쪽으로 이동) */}
               <div style={rightPaneStyle}>
-                {/* {forcedCategory && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    style={{
-                      position: "absolute",
-                      top: "20px",
-                      left: "20px",
-                      // zIndex: 1000,
-                      color: "#ffffff",
-                      textDecoration: "underline",
-                      cursor: "pointer",
-                      fontSize: "1rem",
-                    }}
-                    onClick={() => setForcedCategory(null)}
-                  >
-                    카테고리 선택 해제하기
-                  </motion.div>
-                )} */}
-
                 <Canvas camera={{ position: [0, 80, 600], fov: 75 }}>
                   <ambientLight intensity={0.5} />
                   <directionalLight position={[100, 200, 300]} intensity={1} />
@@ -619,18 +576,6 @@ const MemorialPage = ({ user, initialData }) => {
                     onImageClick={handleImageClick} // 기존 클릭 콜백
                   />
                 </Canvas>
-
-                {/* 네비게이션 바 (오른쪽) */}
-                {/* <RingCategoryNav
-                  activeCategory={activeCategory}
-                  activeSubCategory={activeSubCategory}
-                  forcedCategory={forcedCategory}
-                  forcedSubcategory={forcedSubcategory}
-                  onCategoryClick={handleCategoryClick}
-                  onLockCategory={handleLockCategory}
-                  onSubcategoryClick={handleSubcategoryClick}
-                  onLockSubcategory={handleLockSubcategory}
-                /> */}
               </div>
             </div>
           </div>

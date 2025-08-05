@@ -10,16 +10,10 @@ import { auth } from "../firebase/firebaseConfig";
 export function setupRecaptcha(containerId = "recaptcha-container") {
   if (typeof window === "undefined" || !auth) return null;
 
-  // 기존 verifier가 있다면 제거
   if (window.recaptchaVerifier) {
-    window.recaptchaVerifier.clear();
-    delete window.recaptchaVerifier;
-  }
-
-  // 기존 container DOM 안의 위젯도 제거
-  const container = document.getElementById(containerId);
-  if (container) {
-    container.innerHTML = ""; // 기존 렌더링된 reCAPTCHA DOM 제거
+    // 이미 렌더링 되어 있으면 재사용
+    console.log("reCAPTCHA already set up");
+    return Promise.resolve(window.recaptchaVerifier);
   }
 
   try {

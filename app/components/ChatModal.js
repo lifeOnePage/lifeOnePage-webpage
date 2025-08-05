@@ -44,7 +44,9 @@ const Spinner = () => (
 );
 
 export default function ChatModal({
-  mode,
+  person,
+  prevMessages,
+  onPrevMessagesChange,
   onClose,
   onComplete,
   existingThreadId,
@@ -53,7 +55,7 @@ export default function ChatModal({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalTop, setModalTop] = useState(0);
-  const [waitingForApproval, setWaitingForApproval] = useState(false);
+  const [showGenerateButton, setShowGenerateButton] = useState(false);
   const [threadId, setThreadId] = useState(existingThreadId || uuidv4());
 
   const endRef = useRef(null);
@@ -71,36 +73,44 @@ export default function ChatModal({
   }, []);
 
   useEffect(() => {
+    setMessages(prevMessages);
+  }, [prevMessages]);
+  useEffect(() => {
+    if (existingThreadId) setThreadId(existingThreadId);
+  }, [existingThreadId]);
+
+  useEffect(() => {
     if (endRef.current && scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop =
         scrollContainerRef.current.scrollHeight;
     }
   }, [messages, loading]);
 
-  const addMessage = (msg) => setMessages((prev) => [...prev, msg]);
-
-  // 최초 로딩 (이전 대화 불러오기)
   useEffect(() => {
     const fetchInitial = async () => {
       const user = auth.currentUser;
       if (!user) return;
-
       const ref = doc(firestore, "users", user.uid, "conversations", threadId);
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
         setMessages(snap.data().messages);
       } else {
-        console.log(mode)
+        const arg = {
+          name: person.name,
+          birthPlace: person.birthPlace,
+          birthDate: person.birthDate,
+        };
         const res = await fetch("/api/gpt-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: [], mode: mode }),
+          body: JSON.stringify({ messages: [], arg }),
         });
         const data = await res.json();
-        console.log(data);
-        const botMsg = { sender: "bot", text: data.message };
+        const botMsg = { sender: "bot", text: await data.message };
+        console.log(botMsg);
         setMessages([botMsg]);
+        console.log(messages);
         await setDoc(ref, {
           createdAt: serverTimestamp(),
           messages: [botMsg],
@@ -109,6 +119,13 @@ export default function ChatModal({
     };
     fetchInitial();
   }, [threadId]);
+
+  const saveMessage = async (msg) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const ref = doc(firestore, "users", user.uid, "conversations", threadId);
+    await updateDoc(ref, { messages: arrayUnion(msg) });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -120,72 +137,43 @@ export default function ChatModal({
     setInput("");
     await saveMessage(userMsg);
 
-    if (waitingForApproval) {
-      if (
-        ["네", "예", "좋아요", "응"].some((word) =>
-          input.toLowerCase().includes(word)
-        )
-      ) {
-        const confirmMsg = {
-          sender: "bot",
-          text: "생애문을 생성 중입니다. 잠시만 기다려주세요.",
-        };
-        addMessage(confirmMsg);
-        await saveMessage(confirmMsg);
-        await generateStory(updatedMessages);
-        setWaitingForApproval(false);
-        return;
-      } else {
-        const cancelMsg = {
-          sender: "bot",
-          text: "언제든 준비되면 알려주세요. 😊",
-        };
-        addMessage(cancelMsg);
-        await saveMessage(cancelMsg);
-        return;
-      }
-    }
-
     setLoading(true);
+    const arg = {
+          name: person.name,
+          birthPlace: person.birthPlace,
+          birthDate: person.birthDate,
+        };
     const res = await fetch("/api/gpt-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: updatedMessages }),
+      body: JSON.stringify({ messages: updatedMessages, arg }),
     });
     const data = await res.json();
     const botReply = { sender: "bot", text: data.message };
-    addMessage(botReply);
+    setMessages((prev) => [...prev, botReply]);
     await saveMessage(botReply);
     setLoading(false);
 
     if (data.message.includes("[READY_FOR_STORY]")) {
-      setWaitingForApproval(true);
+      setShowGenerateButton(true);
     }
   };
 
-  const saveMessage = async (msg) => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const ref = doc(firestore, "users", user.uid, "conversations", threadId);
-    await updateDoc(ref, { messages: arrayUnion(msg) });
-  };
-
-  const generateStory = async (messagesForStory) => {
+  const generateStory = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/gpt-story", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: messagesForStory }),
+        body: JSON.stringify({ messages }),
       });
       const data = await res.json();
       if (data.story) {
-        // 🔑 기존처럼 메시지로 넣지 않고, 부모에게 완전히 넘김
         onComplete(data.story, threadId);
-        setLoading(false);
       }
     } catch (err) {
       console.error("생애문 생성 실패:", err);
+    } finally {
       setLoading(false);
     }
   };
@@ -228,7 +216,11 @@ export default function ChatModal({
         >
           {!loading && (
             <button
-              onClick={onClose}
+              onClick={async () => {
+                // console.log(messages)
+                // onPrevMessagesChange(messages);
+                await onClose(messages, threadId);
+              }}
               style={{
                 position: "absolute",
                 top: "12px",
@@ -288,6 +280,26 @@ export default function ChatModal({
             )}
             <div ref={endRef} />
           </div>
+
+          {showGenerateButton && (
+            <button
+              onClick={generateStory}
+              disabled={loading}
+              style={{
+                backgroundColor: "#7f1d1d",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px",
+                fontSize: "14px",
+                marginBottom: "10px",
+                cursor: "pointer",
+              }}
+            >
+              생애문 생성하기
+            </button>
+          )}
+
           <form onSubmit={handleSubmit} style={{ display: "flex", gap: "8px" }}>
             <input
               type="text"

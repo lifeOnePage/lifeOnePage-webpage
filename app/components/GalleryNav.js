@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GoFold, GoUnfold } from "react-icons/go";
 
 export default function GalleryNav({
   person,
@@ -69,10 +70,10 @@ export default function GalleryNav({
       {!openCat && (
         <motion.div
           whileHover={{ scale: 1.05 }}
-          style={{ cursor: "pointer", color: "white" }}
+          style={{ cursor: "pointer", color: "white",margin:"10px 0px 20px 20px" }}
           onClick={(e) => handleCatClick(e, "유년시절")}
         >
-          펼치기
+          <GoFold size={20} />
         </motion.div>
       )}
 
@@ -88,10 +89,10 @@ export default function GalleryNav({
           >
             <motion.div
               whileHover={{ scale: 1.05 }}
-              style={{ cursor: "pointer", marginBottom: "8px", color: "white" }}
+              style={{ cursor: "pointer", margin:"10px 0px 0px 20px", color: "white" }}
               onClick={(e) => handleCatClick(e, null)}
             >
-              접기
+              <GoUnfold size={20} />
             </motion.div>
 
             <motion.div
@@ -157,7 +158,7 @@ export default function GalleryNav({
                                 minWidth: 64,
                                 cursor: "pointer",
                                 padding: 4,
-                                
+
                                 borderRadius: 12,
                                 textAlign: "center",
                                 color: "white",
@@ -177,7 +178,7 @@ export default function GalleryNav({
                                   border: selected
                                     ? "2px solid white"
                                     : "2px solid transparent",
-                                    marginBottom: 4,
+                                  marginBottom: 4,
                                 }}
                               />
                               <div
@@ -240,7 +241,8 @@ export default function GalleryNav({
                       transition={{ duration: 0.3 }}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(64px, 1fr))",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(64px, 1fr))",
                         gap: "12px",
                         padding: "10px 0px",
                         maxWidth: "400px",

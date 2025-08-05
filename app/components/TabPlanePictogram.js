@@ -1,11 +1,11 @@
-export default function TabPlanePictogram() {
+export default function TabPlanePictogram({ size }) {
   return (
     <div
       style={{
         margin: "20px 0px",
         position: "relative",
-        width: 160,
-        height: 100,
+        width: size ? size : 160,
+        height: size ? size / 1.6 : 100,
       }}
     >
       <div
@@ -14,7 +14,7 @@ export default function TabPlanePictogram() {
           backgroundColor: "#ffffff55",
           borderRadius: "0px 6px 6px 6px",
           width: "100%",
-          height: 100,
+          height: size ? size / 1.6 : 100,
           position: "absolute",
         }}
       />

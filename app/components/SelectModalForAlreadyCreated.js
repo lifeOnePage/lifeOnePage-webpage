@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 
 import RingPictogram from "./RingPictogram";
 import TabPlanePictogram from "./TabPlanePictogram";
+import formatDate from "../utils/formatDate"
 
 //유저 문서가 있을 경우 번호 인증 후 모달을 띄움
 //유저 문서가 아예 없으면 선택한 형식 에딧화면으로 바로 라우팅
@@ -136,13 +137,13 @@ export default function SelectModalForAlreadyCreated({
             >
               {selected === type && type === "card" && (
                 <div>
-                  {/* 탭플레인 오브젝트와 유사한 2D 픽토그램, 보더라인 카드에서 인덱스가 뿅뿅 솟아나오는 애니메이션 */}
+                  
                   <TabPlanePictogram />
                 </div>
               )}
               {selected === type && type === "page" && (
                 <div>
-                  {/* 이미지링 오브젝트와 유사한 2D 픽토그램, 도넛링을 이루는 플레인들이 한바퀴 빙그르르 도는 애니메이션*/}
+                  
                   <RingPictogram />
                 </div>
               )}
@@ -191,12 +192,4 @@ export default function SelectModalForAlreadyCreated({
     </div>
   );
 }
-function formatDate(date) {
-  if (!date) return "";
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const min = String(date.getMinutes()).padStart(2, "0");
-  return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
-}
+

@@ -12,7 +12,7 @@ export function useUser() {
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null);           // Firebase 인증 유저
   const [initialData, setInitialData] = useState(null); // 유저와 연결된 초기 데이터
-  const [dataLoading, setDataLoading] = useState(null); // 데이터 로딩중?
+  const [dataLoading, setDataLoading] = useState(false); // 데이터 로딩중?
 
   return (
     <UserContext.Provider value={{ user, setUser, initialData, setInitialData, dataLoading, setDataLoading }}>
