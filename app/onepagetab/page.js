@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { auth, firestore } from "../firebase/firebaseConfig";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
-import AuthOverlay from "./AuthOverlay";
-import CardPage from "./CardPage.jsx";
+import AuthOverlay from "../memorial/AuthOverlay";
+import CardPage from "./CardPage.js";
 import { useUser } from "../contexts/UserContext";
 
 export default function CardPageWrapper() {
