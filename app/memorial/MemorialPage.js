@@ -181,8 +181,8 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         ...(profileImageUrl && { profileImageUrl }),
       };
       console.log(initialData.lifestory);
-      console.log(person)
-      console.log(initialData.lifestory !== person)
+      console.log(person);
+      console.log(initialData.lifestory !== person);
       const storyData = {
         ...(initialData.lifestory?.motto !== person.motto && {
           motto: person.motto,
@@ -191,7 +191,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
           story: person.lifeStory,
         }),
       };
-      
+
       // 🔸 각 섹션별 저장
       if ((type === "profile" || type === "all") && profileData) {
         await saveProfileSection(user.uid, profileData);
@@ -357,7 +357,9 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   const handleLogout = async () => {
     await auth.signOut();
     // window.location.reload(); // 간단히 새로고침으로 로그인 화면으로
-    router.push(`/`)
+
+    router.push(`/`);
+
   };
 
   // OrbitControls onChange -> ringRef.current.updateLeftmost()
@@ -385,14 +387,14 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
     }
     setActiveCategory(catName);
   }
-  console.log(isMe)
+
   return (
     <div
       style={{
         position: "relative",
         fontFamily: "pretendard",
         backgroundColor: BLACK,
-        zIndex:1000,
+        zIndex: 1000,
       }}
     >
       {isMe && (
@@ -480,9 +482,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
           userId={uid}
           isPreview={isPreview}
           LifeStoryHasUnsavedChanges={LifeStoryHasUnsavedChanges}
-          setLifeStoryHasUnsavedChanges={(b) =>
-            setIsUpdated(b)
-          }
+          setLifeStoryHasUnsavedChanges={(b) => setIsUpdated(b)}
         />
 
         <div
@@ -514,7 +514,10 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
               {!isBeforeLogin && !isPreview && (
                 <button
                   onClick={() => {
-                    if (isUpdated) alert("아직 저장되지 않은 변경사항이 있어요. 저장하시겠어요?")
+                    if (isUpdated)
+                      alert(
+                        "아직 저장되지 않은 변경사항이 있어요. 저장하시겠어요?"
+                      );
                     router.push("/gallery");
                   }}
                   style={{

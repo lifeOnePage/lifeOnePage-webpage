@@ -52,10 +52,13 @@ export async function saveUsername(uid, name) {
     // 3. **사용자 이름 업데이트 (Update Username)**
     const userDocRef = doc(db, "users", uid);
     await updateDoc(userDocRef, {
-      username: name
+      username: name,
     });
 
-    return { success: true, message: "사용자 이름이 성공적으로 저장되었습니다." };
+    return {
+      success: true,
+      message: "사용자 이름이 성공적으로 저장되었습니다.",
+    };
 
   } catch (error) {
     console.error("사용자 이름 저장 중 오류 발생:", error);
