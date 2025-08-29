@@ -16,7 +16,7 @@ import Profile from "../components/Profile";
 import Lifestory from "../components/Lifestory";
 import { auth } from "../firebase/firebaseConfig";
 import {
-  uploadGalleryImages,
+  // uploadGalleryImages,
   uploadProfileImage,
 } from "../utils/firebaseStorage";
 import {
@@ -181,8 +181,8 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         ...(profileImageUrl && { profileImageUrl }),
       };
       console.log(initialData.lifestory);
-      console.log(person)
-      console.log(initialData.lifestory !== person)
+      console.log(person);
+      console.log(initialData.lifestory !== person);
       const storyData = {
         ...(initialData.lifestory?.motto !== person.motto && {
           motto: person.motto,
@@ -191,7 +191,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
           story: person.lifeStory,
         }),
       };
-      
+
       // 🔸 각 섹션별 저장
       if ((type === "profile" || type === "all") && profileData) {
         await saveProfileSection(user.uid, profileData);
@@ -199,23 +199,23 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
       if ((type === "lifestory" || type === "all") && storyData) {
         await saveLifestorySection(user.uid, storyData);
       }
-      if (type === "gallery" && galleryData) {
-        const processedGallery = {};
-        for (const category in galleryData) {
-          const files = galleryData[category].map((item) => item.file);
-          const captions = galleryData[category].map((item) => item.caption);
-          const urls = await uploadGalleryImages(files, user.uid, category);
-          processedGallery[category] = urls.map((url, i) => ({
-            url,
-            caption: captions[i],
-          }));
-          await savePhotoGalleryCategory(
-            user.uid,
-            category,
-            galleryData[category]
-          );
-        }
-      }
+      // if (type === "gallery" && galleryData) {
+      //   const processedGallery = {};
+      //   for (const category in galleryData) {
+      //     const files = galleryData[category].map((item) => item.file);
+      //     const captions = galleryData[category].map((item) => item.caption);
+      //     const urls = await uploadGalleryImages(files, user.uid, category);
+      //     processedGallery[category] = urls.map((url, i) => ({
+      //       url,
+      //       caption: captions[i],
+      //     }));
+      //     await savePhotoGalleryCategory(
+      //       user.uid,
+      //       category,
+      //       galleryData[category]
+      //     );
+      //   }
+      // }
 
       setShowSuccessOverlay(true);
       setIsUpdated(false);
@@ -356,7 +356,8 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   // 로그아웃
   const handleLogout = async () => {
     await auth.signOut();
-    window.location.reload(); // 간단히 새로고침으로 로그인 화면으로
+    // window.location.reload(); // 간단히 새로고침으로 로그인 화면으로
+    router.push(`/`);
   };
 
   // OrbitControls onChange -> ringRef.current.updateLeftmost()
@@ -384,17 +385,17 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
     }
     setActiveCategory(catName);
   }
-
+  console.log(isMe);
   return (
     <div
       style={{
         position: "relative",
         fontFamily: "pretendard",
         backgroundColor: BLACK,
-        zIndex:1000,
+        zIndex: 1000,
       }}
     >
-      {!isBeforeLogin && (
+      {isMe && (
         <FloatingToolbar
           person={person}
           userId={uid}
@@ -479,9 +480,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
           userId={uid}
           isPreview={isPreview}
           LifeStoryHasUnsavedChanges={LifeStoryHasUnsavedChanges}
-          setLifeStoryHasUnsavedChanges={(b) =>
-            setIsUpdated(b)
-          }
+          setLifeStoryHasUnsavedChanges={(b) => setIsUpdated(b)}
         />
 
         <div
@@ -513,7 +512,10 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
               {!isBeforeLogin && !isPreview && (
                 <button
                   onClick={() => {
-                    if (isUpdated) alert("아직 저장되지 않은 변경사항이 있어요. 저장하시겠어요?")
+                    if (isUpdated)
+                      alert(
+                        "아직 저장되지 않은 변경사항이 있어요. 저장하시겠어요?"
+                      );
                     router.push("/gallery");
                   }}
                   style={{

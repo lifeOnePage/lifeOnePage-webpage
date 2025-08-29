@@ -1,438 +1,765 @@
-.header {
-  position: absolute;
-  top: 1rem;
-  right: 2rem;
-  z-index: 999;
-  display: flex;
-  gap: 5px;
+/* =============================
+   Fonts 
+   - SUIT Variable 
+   - Gowun Dodum  
+============================= */
+
+/* SUIT Variable (CDN) */
+@font-face {
+  font-family: "SUIT";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/variable/woff2/SUIT-Variable.woff2")
+    format("woff2-variations");
 }
 
+/* Gowun Dodum (Google Fonts) */
+@import url("https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap");
+
+/* =============================
+   Pastel Themes (default: peach)
+============================= */
+:root {
+  --bg: #fee4e4;
+  --surface: #fffefe;
+  --panel: #fef7f3;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --line: #eee5e0;
+  --line-strong: #e7dbd5;
+  --accent: #f28a8a;
+  --accent-ink: #ffffff;
+  --radius: 16px;
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
+  --shadow-md: 0 10px 30px rgba(17, 24, 39, 0.1);
+  --focus: 0 0 0 3px rgba(242, 138, 138, 0.25);
+}
+
+/* Sage mint */
+.theme-mint {
+  --bg: #f7fbf8;
+  --panel: #f3fbf6;
+  --line: #e3efe7;
+  --line-strong: #d8e8df;
+  --accent: #71c7a5;
+  --accent-ink: #0b3d2e;
+}
+/* Lavender fog */
+.theme-lavender {
+  --bg: #fbf8ff;
+  --panel: #f6f1ff;
+  --line: #e7e2f5;
+  --line-strong: #ddd6f0;
+  --accent: #8f88ff;
+  --accent-ink: #111133;
+}
+
+/* =============================
+   Base
+============================= */
+* {
+  box-sizing: border-box;
+}
+.body {
+  font-family: "SUIT", system-ui, -apple-system, Segoe UI, Roboto,
+    "Noto Sans KR", sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--bg), #ffffff 40%);
+  min-height: 100vh;
+}
+
+/* =============================
+   Header (top-right)
+============================= */
+.header {
+  position: absolute;
+  top: 16px;
+  right: 24px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+}
 .login-btn,
 .logout-btn,
 .mypage-btn {
-  background: white;
-  color: black;
-  padding: 6px 12px;
-  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
   font-size: 14px;
-  font-weight: nor;
-  border: none;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: box-shadow 0.15s, transform 0.08s;
 }
-
 .login-btn:hover,
 .logout-btn:hover,
 .mypage-btn:hover {
-  text-decoration: underline;
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
-.body {
-  font-family: "Pretendard-Regular", sans-serif;
-  min-height: 100vh;
-  background: transparent;
-}
-
+/* =============================
+   Layout
+============================= */
 .container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 48px 24px 28px;
   display: flex;
-  padding: 4rem 7rem;
   flex-direction: column;
 }
 
-.card-container {
-  border: 1px solid black;
-  padding-top: 1rem;
-  padding: 1rem 2rem;
-  overflow: hidden;
-}
-
-/* Timeline Header */
+/* =============================
+   Timeline Tabs (soft pill)
+============================= */
 .timeline-header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  border-bottom: 1px solid #000;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
 }
-
-/* 메인 버튼 (강해린의 이야기) */
 .main-btn {
-  padding: 6px 20px;
+  padding: 7px 18px;
   font-size: 14px;
-  font-weight: bold;
-  border: 1px solid #000;
-  border-radius: 8px 8px 0 0;
-  background: white;
-  transition: background 0.2s;
+  font-weight: 800;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
 }
-
 .main-btn.active {
-  background: black;
-  color: white;
-}
-
-.year-container {
-  display: flex;
-  flex-wrap: wrap;
-  margin-left: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
 }
 
 .year-group {
   display: flex;
   align-items: flex-end;
 }
-
 .year-wrapper {
   display: flex;
-  border: 1px solid #000;
-  border-radius: 8px 8px 0 0;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
+  background: #fff;
   overflow: hidden;
-  margin-left: 5px;
+  box-shadow: var(--shadow-sm);
 }
-
 .year-label {
-  padding: 6px 16px;
+  padding: 7px 14px;
   font-size: 14px;
-  font-weight: bold;
-  background: white;
+  font-weight: 800;
+  background: #fff;
 }
-
-.year-label.active {
-  background: black;
-  color: white;
-}
-
 .event-btn {
-  padding: 6px 16px;
+  padding: 7px 14px;
   font-size: 14px;
-  border-left: 1px solid #000;
-  background: white;
-  transition: background 0.2s;
+  border-left: 1px solid var(--line);
+  background: #fff;
+  transition: background 0.15s, color 0.15s, transform 0.08s;
 }
-
 .event-btn:hover {
-  background: #f5f5f5;
+  background: rgba(0, 0, 0, 0.03);
 }
-
-.event-btn.active,
-.event-btn.active:hover {
-  background: black;
-  color: white;
+.event-btn.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-left-color: var(--accent);
 }
-
 .btn-plus {
   font-size: 20px;
-  color: gray;
-  margin-left: 8px;
+  color: #889;
   background: none;
-  border: none;
+  border: 0;
   cursor: pointer;
 }
 
-/* 추가 입력 */
+/* 추가 입력 탭 */
+.add-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
 .add-section input {
-  border: 1px solid #ccc;
-  padding: 4px;
-  border-radius: 4px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 10px;
   font-size: 14px;
 }
-
+.add-section input:focus {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.add-section input:nth-of-type(1) {
+  width: 88px;
+  text-align: center;
+}
+.add-section input:nth-of-type(2) {
+  width: 220px;
+}
 .btn-add {
-  background: black;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  cursor: pointer;
 }
-
+.btn-add:hover {
+  filter: brightness(0.96);
+}
 .btn-cancel {
-  font-size: 20px;
-  color: gray;
-  background: none;
-  border: none;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  cursor: pointer;
 }
 
-/* Profile Section */
+/* =============================
+   Card
+============================= */
+.card-container {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* =============================
+   Profile Section
+============================= */
 .profile-section {
-  display: flex;
-  gap: 3rem;
-  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 36px;
+  margin-top: 12px;
+}
+@media (max-width: 768px) {
+  .profile-section {
+    grid-template-columns: 1fr;
+  }
 }
 
 .image-box {
-  width: 224px;
-  height: 300px;
-  background: #f3f3f3;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  width: 260px;
+  height: 340px;
+  background: #f7f7f9;
+  border: 1px solid var(--line);
+  border-radius: 18px;
   overflow: hidden;
   position: relative;
+  box-shadow: var(--shadow-sm);
 }
-
 .image-box img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
-/* 버튼 스타일 (우측 하단) */
 .btn-image-change {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  font-size: 12px;
+  right: 12px;
+  bottom: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--line);
   padding: 6px 10px;
-  border-radius: 4px;
+  border-radius: 12px;
+  font-size: 12px;
   cursor: pointer;
-  z-index: 2;
+  transition: box-shadow 0.15s, transform 0.08s;
 }
-
-/* 기본 파일 input 숨기기 */
+.btn-image-change:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
 .btn-image-change input[type="file"] {
   display: none;
 }
 
+/* =============================
+   Details / Inputs
+============================= */
 .details-box {
-  flex: 1;
+  position: relative;
 }
-
-.input-field {
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 8px;
-  border: 2px dotted #aeaeae;
-  border-radius: 6px;
-  font-size: 16px;
-}
-
+.input-field,
+.input-field-name,
 .textarea-field {
   width: 100%;
-  height: 120px;
-  padding: 8px;
-  border: 2px dotted #aeaeae;
-  border-radius: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
   font-size: 16px;
+  background: #fff;
+  margin-bottom: 12px;
 }
-
+.input-field-name {
+  font-weight: 800;
+}
+.textarea-field {
+  height: 150px;
+  resize: vertical;
+}
+.input-field:focus,
+.input-field-name:focus,
+.textarea-field:focus {
+  outline: none;
+  box-shadow: var(--focus);
+}
 .char-count {
   text-align: right;
-  color: #666;
-  font-size: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: -6px;
+  margin-bottom: 8px;
 }
 
+/* 보기 모드 텍스트 (제목에 고운돋움으로 결) */
 .title {
-  font-size: 24px;
-  font-weight: bold;
+  font-family: "Pretendard Variable";
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   margin-bottom: 8px;
 }
-
 .subtitle {
-  font-size: 18px;
-  margin-bottom: 8px;
+  font-size: 16px;
+  color: #52607a;
+  margin-bottom: 6px;
 }
-
 .description {
   font-size: 16px;
   line-height: 1.6;
   white-space: pre-line;
+  letter-spacing: -0.01563rem;
 }
 
-/* Action Section */
-.action-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: right;
-  margin-top: 2rem;
-}
-
-.buttons {
-  display: flex;
-  gap: 12px;
-  margin-top: 2rem;
-  margin-left: 7rem;
-}
-
-.btn-edit,
-.btn-delete {
-  padding: 8px 16px;
-  border-radius: 6px;
-  color: white;
-  font-size: 14px;
+/* =============================
+   Trash (우측 상단 고정)
+============================= */
+.trash-floating {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border: none;
+  border-radius: 12px;
   cursor: pointer;
+  line-height: 0;
+  color: #555;
+  backdrop-filter: blur(2px);
+  transition: background 0.15s, color 0.15s, transform 0.08s, box-shadow 0.15s;
+  z-index: 2;
+  box-shadow: var(--shadow-sm);
+}
+.trash-floating:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #b42318;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.14);
+}
+.trash-floating:active {
+  transform: translateY(1px);
+}
+.trash-floating svg {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
-.btn-edit {
-  background: black;
+/* =============================
+   Inline Year Color Editor
+============================= */
+.inline-color-editor {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+.inline-color-header {
+  font-size: 13px;
+  font-weight: 800;
+  color: #374151;
+  margin-bottom: 10px;
+}
+.inline-color-swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.inline-color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.15s;
+}
+.inline-color-swatch:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.15);
+}
+.inline-color-swatch.active {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.inline-color-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
-.btn-delete {
-  background: #e11d48;
+/* =============================
+   Watermark & QR
+============================= */
+.watermark {
+  font-family: "Yde street";
+  text-align: right;
+  font-size: 72px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: rgba(0, 0, 0, 0.05);
+  margin-top: 22px;
 }
+.watermark-editing {
+  color: rgba(255, 255, 255, 0.12);
+  font-family: "Yde street";
+  font-size: 1.5625rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: -0.03125rem;
 
-.btn-delete:hover {
-  background: #be123c;
+  width: 100%;
+  text-align: right;
+  font-size: 72px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 6px 10px;
+  margin-top: 22px;
 }
-
-/* QR Section */
 .qr-section {
   display: flex;
-  flex-direction: row;
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
   margin-top: 10px;
 }
-
 .btn-qr {
-  background: #e5e5e5;
+  background: var(--panel);
   padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 14px;
-  margin-bottom: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  cursor: pointer;
 }
-
 .qr-box img {
   width: 40px;
   height: 40px;
 }
 
-.qr-box span {
+/* =============================
+   Bottom Actions
+============================= */
+.buttons.buttons-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 16px;
+
+  margin-right: 2rem;
+}
+.btn-large {
+  min-width: 96px;
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+  border-radius: 14px;
+}
+.btn-preview {
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.08s;
+}
+.btn-preview:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.btn-edit {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 1px solid var(--accent);
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.08s;
+}
+.btn-edit:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+}
+.btn-edit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.save-hint {
   font-size: 12px;
-}
-
-/* Watermark */
-.watermark {
+  color: var(--muted);
+  line-height: 1;
+  min-height: 1em;
   text-align: right;
-  font-size: 80px;
-  font-weight: bold;
-  color: rgba(0, 0, 0, 0.05);
-  font-family: "Yde street", sans-serif;
+}
+.save-hint.saving {
+  color: #1d4ed8;
+}
+.save-hint.saved {
+  color: #15803d;
+}
+.save-hint.error {
+  color: #dc2626;
 }
 
-.watermark-editing {
+/* =============================
+   Modal (모바일 편집 시트)
+============================= */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 50;
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.modal-sheet {
   width: 100%;
-  text-align: right;
-  font-size: 80px;
-  font-weight: bold;
-  color: rgba(0, 0, 0, 0.05);
-  font-family: "Yde street", sans-serif;
-  border: 2px dotted #aeaeae;
-  border-radius: 4px;
+  max-width: 720px;
+  height: 92vh;
+  background: #fff;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -12px 28px rgba(17, 24, 39, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: sheetUp 0.16s ease-out;
+}
+.modal-header {
+  position: relative;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-title {
+  font-weight: 800;
+  font-size: 16px;
+}
+.modal-close {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+}
+.modal-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px 16px 4px;
+  position: relative;
+}
+.modal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.modal-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: 4px;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  background: #fff;
 }
 
+/* =============================
+   Responsive
+============================= */
 @media (max-width: 768px) {
-  .header {
-    position: absolute;
-    top: 1rem;
-    right: 0.5rem;
-    z-index: 999;
-    display: flex;
-    gap: 0.5px;
-  }
-  .login-btn,
-  .logout-btn,
-  .mypage-btn {
-    background: white;
-    color: black;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
   .container {
-    display: flex;
-    padding: 4rem 1rem;
-    flex-direction: column;
+    padding: 32px 16px 20px;
   }
-
-  .timeline-header {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px; /* 버튼 간격 최소화 */
-    justify-content: flex-start;
+  .btn-large {
+    height: 40px;
+    min-width: 88px;
   }
-
-  .main-btn {
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 6px 6px 0 0;
-  }
-
-  .year-group {
-    display: flex;
-    gap: 2px;
-    margin: 0;
-  }
-
-  .year-wrapper {
-    display: flex;
-    flex-shrink: 1;
-    border-radius: 6px 6px 0 0;
-    overflow: hidden;
-  }
-
-  .year-label {
-    padding: 4px 6px;
-    font-size: 11px;
-    font-weight: bold;
-  }
-
-  .event-btn {
-    padding: 4px 6px;
-    font-size: 11px;
-  }
-
-  .btn-plus {
-    font-size: 16px;
-    padding: 2px;
-  }
-
-  /* 프로필/이벤트 섹션 세로 배치 */
-  .profile-section {
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: left;
-    margin-top: 0.5rem;
-  }
-  .image-box {
-    width: 100%;
-    max-width: 170px;
-    height: auto;
-    aspect-ratio: 3/4;
-  }
-
-  .description {
-    font-size: 13px;
-    white-space: pre-line;
-  }
-
-  .details-box {
-    width: 100%;
-  }
-
-  /* 버튼 영역 정렬 */
-  .action-section {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 1rem;
-  }
-
-  .btn-edit,
-  .btn-delete {
-    font-size: 12px; /* 버튼 글자 크기 줄이기 */
-    padding: 6px 10px; /* 버튼 크기 축소 */
-  }
-
-  .watermark {
-    font-size: 30px;
-    text-align: center;
-    border: none;
-    outline: none;
-  }
-
+  .watermark,
   .watermark-editing {
-    font-size: 40px;
-    text-align: center;
-    border: 1px solid black;
-    border-radius: 4px;
+    font-size: 56px;
+  }
+}
+@media (max-width: 480px) {
+  .trash-floating {
+    padding: 10px;
+    top: 8px;
+    right: 8px;
+  }
+  .inline-color-swatch {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* ====== Window Card (myspace-ish) ====== */
+
+/* 기존 card-container는 감싸는 래퍼만 */
+.card-container {
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 윈도우 카드 본체 */
+.window-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* 옵션: 왼쪽-상단만 네모 */
+.window-card.square-tl {
+  border-top-left-radius: 0 !important;
+}
+
+/* 상단 바 */
+.window-chrome {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: linear-gradient(180deg, #f2f4f7, #e9edf3);
+  border-bottom: 1px solid var(--line);
+}
+
+/* 좌측: 별 + 타이틀 */
+.wc-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wc-star {
+  width: 18px;
+  height: 18px;
+  fill: #c1c7d0;
+}
+.wc-title {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+/* 우측: 작은 아이콘 버튼들(장식) */
+.wc-right {
+  display: flex;
+  gap: 6px;
+}
+.wc-icon {
+  min-width: 32px;
+  height: 28px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--line);
+  cursor: default;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+/* 본문 패딩 */
+.window-body {
+  padding: 22px 24px;
+}
+
+/* 분리선(필요시 사용) */
+.soft-hr {
+  height: 1px;
+  background: var(--line);
+  margin: 12px 0;
+}
+
+/* 연한 박스(두번째/세번째 샘플의 핑크 패널 느낌이 필요할 때) */
+.soft-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .window-card {
+    border-radius: 16px;
+  }
+  .window-chrome {
+    height: 44px;
+  }
+  .wc-title {
+    font-size: 14px;
+  }
+  .window-body {
+    padding: 16px;
   }
 }

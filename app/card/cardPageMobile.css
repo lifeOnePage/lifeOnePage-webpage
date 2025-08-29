@@ -1,0 +1,146 @@
+@media (max-width: 768px) {
+  .header {
+    position: absolute;
+    top: 1rem;
+    right: 0.5rem;
+    z-index: 999;
+    display: flex;
+    gap: 0.5px;
+  }
+
+  .login-btn,
+  .logout-btn,
+  .mypage-btn {
+    background: white;
+    color: black;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .container {
+    display: flex;
+    padding: 4rem 1rem;
+    flex-direction: column;
+  }
+
+  .timeline-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px; /* 버튼 간격 최소화 */
+    justify-content: flex-start;
+    border-bottom: 1px solid #000; /* 모바일도 유지 */
+  }
+
+  .main-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px 6px 0 0;
+    border-bottom: none;
+  }
+
+  .year-group {
+    display: flex;
+    gap: 2px;
+    margin: 0;
+    margin-bottom: -1px; /* 모바일도 겹치기 */
+  }
+
+  .year-group.active {
+    transform: translateY(-4px);
+    margin-bottom: -5px;
+    z-index: 2;
+  }
+
+  .year-wrapper {
+    display: flex;
+    flex-shrink: 1;
+    border-radius: 6px 6px 0 0;
+    overflow: hidden;
+    border-bottom: none;
+  }
+
+  .year-label {
+    padding: 4px 6px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  .event-btn {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+
+  .btn-plus {
+    font-size: 16px;
+    padding: 2px;
+  }
+
+  /* 프로필/이벤트 섹션 세로 배치 */
+  .profile-section {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: left;
+    margin-top: 0.5rem;
+  }
+
+  .image-box {
+    width: 100%;
+    max-width: 170px;
+    height: auto;
+    aspect-ratio: 3/4;
+  }
+
+  .description {
+    font-size: 13px;
+    white-space: pre-line;
+  }
+
+  .details-box {
+    width: 100%;
+  }
+
+  /* 버튼 영역 정렬 */
+  .action-section {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .watermark {
+    font-size: 30px;
+    text-align: center;
+    border: none;
+    outline: none;
+  }
+
+  .watermark-editing {
+    font-size: 40px;
+    text-align: center;
+    border: 1px solid black;
+    border-radius: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .add-section {
+    gap: 4px;
+    padding: 4px;
+  }
+  .add-section input:nth-of-type(1) {
+    width: 64px;
+  }
+  .add-section input:nth-of-type(2) {
+    width: 140px;
+  }
+  .btn-add,
+  .btn-cancel {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
