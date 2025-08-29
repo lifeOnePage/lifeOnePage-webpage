@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { useRef, useState, useMemo } from "react";
+import React, { useRef, useState, useMemo, useCallback, useEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useHelper } from "@react-three/drei";
@@ -10,11 +10,12 @@ import MainHeader from "./MainHeader";
 import AboutLines from "./AboutLines";
 import Mypage from "./Mypage";
 import { BsChevronCompactLeft, BsChevronCompactRight } from "react-icons/bs";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { FaSquareFull } from "react-icons/fa";
 import { BLACK } from "../styles/colorConfig";
 import TabPlanePictogram from "./TabPlanePictogram";
 import RingPictogram from "./RingPictogram";
+import { useSpring, to as fmTo } from "@react-spring/core"; // 이미 쓰는 framer만으로도 가능하지만, 부드럼용 예시
 
 const RING_COUNT = 80;
 const RING_RADIUS = 140;
@@ -26,6 +27,31 @@ const COLORS = {
   tab: "rgba(50, 50, 50)",
   light: "#fff",
 };
+
+
+function CameraZoom({ mode }) {
+  const { camera, size } = useThree();
+
+  // default에서 약간 확대, mypage에서 기본값
+  const targetZoom = mode === "default" ? 1.5 : 1.0;
+
+  // 부드러운 전환: framer-motion만 쓰고 싶다면 useMotionValue/useSpring로 대체 가능
+  const { z } = useSpring({ z: targetZoom, config: { tension: 180, friction: 20 }});
+
+  useFrame(() => {
+    const zoom = z.get ? z.get() : targetZoom; // (react-spring / framer 둘 중 택1)
+    camera.zoom = zoom;                   // ★ zoom으로 전체 장면 확대/축소
+    camera.updateProjectionMatrix();
+  });
+
+  // 리사이즈 때 aspect 갱신(안전)
+  React.useEffect(() => {
+    camera.aspect = size.width / size.height;
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height]);
+
+  return null;
+}
 
 function PlaneWithTabs({ hovered, onPreviewRequest }) {
   const texture = useLoader(THREE.TextureLoader, "/images/texture.jpg");
@@ -65,7 +91,7 @@ function PlaneWithTabs({ hovered, onPreviewRequest }) {
       position={[0, 0, 0]}
       rotation={[Math.PI / 8, 0, 0]}
       name="plane"
-      onClick={()=>onPreviewRequest("card")}
+      onClick={() => onPreviewRequest("card")}
     >
       <mesh name="plane-mesh" userData={{ type: "plane" }}>
         <planeGeometry args={[200, 120, 128, 128]} />
@@ -110,26 +136,118 @@ function PlaneWithTabs({ hovered, onPreviewRequest }) {
   );
 }
 
+const ENTRANCE_OFFSET = 80;   // 시작 시 바깥쪽으로 얼마나 떨어져서 들어올지(px)
+const STAGGER = 0.02;         // 플레인별 지연(초)
+const DURATION = 0.9;         // 한 플레인이 들어오는 데 걸리는 시간(초)
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+/** 개별 플레인: 위치/불투명도/색을 프레임마다 업데이트 */
+function RingPlane({
+  outDir,           // 원점→플레인 방향 (정규화)
+  quat,             // 플레인이 원점을 향하도록 고정된 회전
+  delay,            // 개별 스태거 지연
+  hoveredRef,       // 호버 상태 참조
+  currentRadiusRef, // 부모에서 관리하는 부드러운 반지름
+  colorOn,          // hovered true일 때 색
+  colorOff,         // hovered false일 때 색
+}) {
+  const meshRef = useRef();
+  const matRef = useRef();
+  const startedAt = useRef(null);
+
+  useFrame((state) => {
+    if (!startedAt.current) startedAt.current = state.clock.getElapsedTime();
+    const elapsed = state.clock.getElapsedTime() - startedAt.current;
+
+    // 0~1 진행도 (스태거 반영)
+    const p = THREE.MathUtils.clamp((elapsed - delay) / DURATION, 0, 1);
+    const e = easeOutCubic(p);
+
+    // 반지름: 바깥에서 최종 반지름으로 미끄러지듯
+    const r = currentRadiusRef.current + ENTRANCE_OFFSET * (1 - e);
+
+    // 위치 갱신 (그룹 로컬좌표)
+    // outDir은 원점→플레인 방향이므로 그냥 r 곱하면 됨
+    if (meshRef.current) {
+      meshRef.current.position.copy(outDir).multiplyScalar(r);
+      meshRef.current.quaternion.copy(quat);
+    }
+
+    // 머티리얼: 색 + 불투명도(등장 페이드인)
+    const hovered = hoveredRef.current;
+    const baseOpacity = 0.4 + 0.3 * (hovered ? 1 : 0); // 기존 로직 반영
+    const targetOpacity = baseOpacity * (0.2 + 0.8 * e);
+    if (matRef.current) {
+      matRef.current.opacity = targetOpacity;
+      const targetColor = hovered ? colorOn : colorOff;
+      matRef.current.color.set(targetColor);
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} userData={{ type: "ring" }}>
+      <planeGeometry args={[60, 40, 128, 128]} />
+      <meshStandardMaterial
+        ref={matRef}
+        transparent
+        side={THREE.DoubleSide}
+        opacity={0} // 시작은 투명
+      />
+    </mesh>
+  );
+}
+
 function ImageRing({ hovered, onPreviewRequest }) {
   const group = useRef();
   const speed = useRef(0);
   const tiltGroup = useRef();
   const currentRadius = useRef(RING_RADIUS);
-  const texture = useLoader(THREE.TextureLoader, "/images/texture.jpg");
-  const displacement = useLoader(
-    THREE.TextureLoader,
-    "/images/displacement.jpg"
-  );
+  const hoveredRef = useRef(hovered);
+  useEffect(() => {
+    hoveredRef.current = hovered;
+  }, [hovered]);
+
+  // (선택) 텍스처 로딩 — 사용 안 해도 에러는 없음
+  useLoader(THREE.TextureLoader, "/images/texture.jpg");
+  useLoader(THREE.TextureLoader, "/images/displacement.jpg");
+
+  // 각 플레인의 '방사 방향(outDir)'과 '회전(quat)', '스태거 지연(delay)'을 미리 계산
+  const planes = useMemo(() => {
+    const arr = [];
+    const mid = (RING_COUNT - 1) / 2; // 중앙에서 좌우로 퍼지는 느낌의 스태거
+    for (let j = 0; j < RING_COUNT; j++) {
+      const angle = (Math.PI * 2 * j) / RING_COUNT;
+
+      // 원점 → 플레인(반지름 1로 정규화한 방향)
+      const outDir = new THREE.Vector3(0, Math.cos(angle), Math.sin(angle)).normalize();
+
+      // 플레인이 원점을 향하도록: (0,1,0) → (원점-플레인) 방향
+      const inDir = outDir.clone().multiplyScalar(-1); // 플레인→원점
+      const quat = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        inDir
+      );
+
+      // 중앙에서 바깥으로 퍼지는 스태거(원하면 j*STAGGER로 단순화 가능)
+      const order = Math.abs(j - mid);      // 중앙에 가까울수록 delay 작게
+      const delay = order * STAGGER;
+
+      arr.push({ j, outDir, quat, delay });
+    }
+    return arr;
+  }, []);
+
+  // 회전/반지름/기울기 애니메이션(기존 로직 유지)
   useFrame(() => {
-    // 1. 회전 속도 부드럽게 변화
+    // 1) 회전 속도 부드럽게
     const targetSpeed = hovered ? RING_SPEED * 6 : RING_SPEED;
     speed.current = THREE.MathUtils.lerp(speed.current, targetSpeed, 0.03);
+    if (group.current) group.current.rotation.x += speed.current;
 
-    if (group.current) {
-      group.current.rotation.x += speed.current;
-    }
-
-    // 2. 반지름 부드럽게 변화
+    // 2) 반지름 부드럽게
     const targetRadius = hovered ? RING_RADIUS + 20 : RING_RADIUS;
     currentRadius.current = THREE.MathUtils.lerp(
       currentRadius.current,
@@ -137,7 +255,7 @@ function ImageRing({ hovered, onPreviewRequest }) {
       0.05
     );
 
-    // 3. 기울기, 위치 변화
+    // 3) 기울기/위치 부드럽게
     if (tiltGroup.current) {
       tiltGroup.current.rotation.x = THREE.MathUtils.lerp(
         tiltGroup.current.rotation.x,
@@ -167,62 +285,32 @@ function ImageRing({ hovered, onPreviewRequest }) {
     }
   });
 
-  const ringMeshes = useMemo(() => {
-    return Array.from({ length: RING_COUNT }, (_, j) => j); // index만 저장
-  }, []);
-
   return (
-    <group ref={tiltGroup} onClick={()=>onPreviewRequest("page")}>
+    <group ref={tiltGroup} onClick={() => onPreviewRequest("page")}>
       <group ref={group} name="ring">
-        {/* 투명한 토러스 호버 영역 */}
+        {/* 투명한 토러스: 호버 영역(반지름은 고정이라도 상관없음) */}
         <mesh
           name="ring-hover-area"
           rotation={[0, Math.PI / 2, 0]}
           userData={{ type: "ring" }}
         >
           <torusGeometry args={[RING_RADIUS, 35, 60, 80]} />
-          <meshBasicMaterial
-            transparent={true}
-            // wireframe={true}
-            opacity={0.1}
-            depthWrite={false}
-          />
+          <meshBasicMaterial transparent opacity={0.1} depthWrite={false} />
         </mesh>
 
-        {ringMeshes.map((j) => {
-          const angle = (Math.PI * 2 * j) / RING_COUNT;
-          // const radius = currentRadius.current;
-
-          const position = new THREE.Vector3(
-            0,
-            RING_RADIUS * Math.cos(angle),
-            RING_RADIUS * Math.sin(angle)
-          );
-          const direction = new THREE.Vector3()
-            .subVectors(new THREE.Vector3(0, 0, 0), position)
-            .normalize();
-          const quaternion = new THREE.Quaternion().setFromUnitVectors(
-            new THREE.Vector3(0, 1, 0),
-            direction
-          );
-
-          return (
-            <mesh
-              key={j}
-              position={position}
-              quaternion={quaternion}
-              userData={{ type: "ring" }}
-            >
-              <planeGeometry args={[60, 40, 128, 128]} />
-              <meshStandardMaterial
-                color={hovered ? "#fff" : COLORS.object}
-                transparent
-                opacity={0.4 + 0.3 * hovered}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          );
-        })}
+        {/* 플레인들: 미끄러지듯 조립 */}
+        {planes.map(({ j, outDir, quat, delay }) => (
+          <RingPlane
+            key={j}
+            outDir={outDir}
+            quat={quat}
+            delay={delay}
+            hoveredRef={hoveredRef}
+            currentRadiusRef={currentRadius}
+            colorOn="#ffffff"
+            colorOff={COLORS.object}
+          />
+        ))}
       </group>
     </group>
   );
@@ -264,7 +352,7 @@ function SceneContent({
   hoveredRing,
   setHoveredPlane,
   setHoveredRing,
-  onPreviewRequest
+  onPreviewRequest,
 }) {
   const raycasterRef = useRef(new THREE.Raycaster());
   const { mouse, camera, scene } = useThree();
@@ -311,7 +399,10 @@ function SceneContent({
         position={[-3, 0, 3]}
         castShadow
       />
-      <PlaneWithTabs hovered={hoveredPlane}  onPreviewRequest={onPreviewRequest}/>
+      <PlaneWithTabs
+        hovered={hoveredPlane}
+        onPreviewRequest={onPreviewRequest}
+      />
       <ImageRing hovered={hoveredRing} onPreviewRequest={onPreviewRequest} />
 
       <OrbitControls enableZoom={false} enablePan={false} />
@@ -319,46 +410,45 @@ function SceneContent({
   );
 }
 
-function Main3FGraphic({ onPreviewRequest, initialData }) {
+function Main3FGraphic({ onPreviewRequest, initialData, setTrigger }) {
   const [hoveredPlane, setHoveredPlane] = useState(false);
   const [hoveredRing, setHoveredRing] = useState(false);
-  const [mode, setMode] = useState("init"); // init, about, mypage
+  const [mode, setMode] = useState("default"); // "default" | "mypage"
   const [id, setId] = useState("");
-  const variants = {
-    about: {
-      x: 0,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 20,
-        duration: 1,
-        ease: "easeIn",
-        duration: 0.5,
-      },
-    },
-    init: {
-      x: "-30%",
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 20,
-        duration: 1,
-        ease: "easeIn",
-        duration: 0.5,
-      },
-    },
-    mypage: {
-      x: "-60%",
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 20,
-        duration: 1,
-        ease: "easeIn",
-        duration: 0.5,
-      },
-    },
+  console.log(initialData)
+
+  // 헤더에서 호출하는 모드 변경 핸들러를 인터셉트:
+  // - about: 모드 변경 없이 100vh 아래로 스크롤
+  // - mypage: 모드 = "mypage"
+  // - default: 모드 = "default"
+  const handleHeaderModeChange = useCallback((next) => {
+    if (next === "about") {
+      window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
+      return;
+    }
+    if (next === "mypage") {
+      window.scrollTo({ top: -1 * window.innerHeight, behavior: "smooth" });
+      setMode("mypage");
+      return;
+    }
+    setMode("default");
+  }, []);
+
+  // 공통 전환
+  const TRANSITION = { type: "spring", stiffness: 100, damping: 20 };
+
+  // 캔버스 래퍼 이동(요구사항: default에서 약간 오른쪽 치우침, mypage에서 살짝 왼쪽 이동)
+  const canvasVariants = {
+    default: { x:"20vw", opacity: 1, transition: TRANSITION },
+    mypage: { x:"-10vw",opacity: 0.9, transition: TRANSITION },
   };
+
+  // AboutLines 가시성(요구사항: mypage에서 opacity 0)
+  const aboutVariants = {
+    default: { opacity: 1, transition: { ...TRANSITION, duration: 0.25 } },
+    mypage: { opacity: 0, transition: { ...TRANSITION, duration: 0.25 } },
+  };
+
   return (
     <div
       style={{
@@ -366,268 +456,106 @@ function Main3FGraphic({ onPreviewRequest, initialData }) {
         width: "100vw",
         height: "100vh",
         overflow: "hidden",
+        background: "#000", // 배경이 있다면 유지/수정
       }}
     >
-      <MainHeader />
+      {/* 헤더: setMode를 인터셉터로 전달 */}
+      <MainHeader setMode={handleHeaderModeChange} setTrigger={setTrigger}/>
+
+      {/* Canvas + Overlays */}
       <motion.div
-        style={{
-          position: "fixed",
-          left: 30,
-          top: 100,
-          transform: "translateY(-50%)",
-          zIndex: 999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-        }}
-        initial="rest"
-        whileHover="hover" // 자식들이 variants.hover 상태로 전환
+        style={{ position: "relative", width: "100%", height: "100%" }}
+        // initial={false}
         animate={mode}
-        onClick={() => {
-          console.log("about");
-          setMode("about");
-        }}
       >
+        {/* AboutLines (좌측 영역에 고정 배치: 예전처럼 380px 컬럼 중앙 정렬) */}
         <motion.div
-          variants={{
-            rest: { x: 0, color: "#ffffff33" },
-            about: {
-              x: -8,
-              color: "#ffffff00",
-              transition: { ease: "easeIn", duration: 0.7 },
-            },
-          }}
-        >
-          <BsChevronCompactLeft size={40} />
-        </motion.div>
-        <motion.span
-          variants={{
-            rest: { opacity: 0, x: -10 },
-            about: { opacity: 1, x: -20, transition: { duration: 0.25 } },
-          }}
           style={{
-            fontSize: 18,
-            color: "#fff",
+            position: "absolute",
+            top: "50%",
+            // left: 10,
+            width: 380,
+            transform: "translateY(-50%)",
+            pointerEvents: "none", // 오버레이지만 클릭 막기
+            zIndex: 2,
           }}
+          variants={aboutVariants}
         >
-          About
-        </motion.span>
-      </motion.div>
-      <motion.div
-        style={{
-          position: "fixed",
-          left: "50vw",
-          top: 100,
-          transform: "translateX(-50%) translateY(-50%)",
-          zIndex: 999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-        }}
-        initial="rest"
-        whileHover="hover" // 자식들이 variants.hover 상태로 전환
-        animate={mode}
-        onClick={() => {
-          console.log("init");
-          setMode("init");
-        }}
-      >
-        {" "}
-        <motion.div
-          variants={{
-            rest: { x: 0, color: "#ffffff33" },
-            init: {
-              color: "#fff",
-              transition: { ease: "easeIn", duration: 0.7 },
-            },
-          }}
-        >
-          <FaSquareFull size={20} />
+          <AboutLines />
         </motion.div>
-      </motion.div>
-      <motion.div
-        style={{
-          position: "fixed",
-          right: 30,
-          top: 100,
-          transform: "translateY(-50%)",
-          zIndex: 900,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-        }}
-        initial="rest"
-        whileHover="hover" // 자식들이 variants.hover 상태로 전환
-        animate={mode}
-        onClick={() => {
-          console.log("mypage");
-          setMode("mypage");
-        }}
-      >
-        <motion.span
-          variants={{
-            rest: { opacity: 0, x: -8 },
-            mypage: { opacity: 1, x: 0, transition: { duration: 0.25 } },
-          }}
+
+        {/* 3D Canvas (화면 전체에 깔고, variants로 x만 미세 이동) */}
+        <motion.div
+          variants={canvasVariants}
           style={{
-            fontSize: 18,
-            color: "#fff",
+            position: "absolute",
+            inset: 0,
+            willChange: "transform",
+            zIndex: 1,
           }}
         >
-          Mypage
-        </motion.span>
-        <motion.div
-          variants={{
-            rest: { x: -8, color: "#ffffff33" },
-            mypage: {
-              x: 0,
-              color: "#ffffff00",
-              transition: { ease: "easeIn", duration: 0.7 },
-            },
-          }}
-        >
-          <BsChevronCompactRight size={40} />
-        </motion.div>
-      </motion.div>
-      <motion.div
-        style={{ position: "relative", width: "100vw", height: "100vh" }}
-        initial="init"
-        animate={mode}
-      >
-        <motion.div variants={variants}>
-          <div
-            style={{
-              position: "relative",
-              width: "200vw",
-              height: "100vh",
-              display: "flex",
+          <Canvas
+            shadows
+            dpr={[1, 2]}
+            style={{ width: "100%", height: "100%" }}
+            camera={{
+              position: [-300, -180, 400],
+              rotation: [0.5, -0.79, 0.37],
+              fov: 50,
             }}
           >
-            <motion.div
-              style={{
-                position: "relative",
-                width: "30vw",
-                height: "100vh",
-              }}
-              initial="init"
-              animate={mode}
-            >
-              <motion.div
-                variants={{
-                  init: { opacity: 0, x: -100, y: "-50%" },
-                  about: {
-                    opacity: 1,
-                    x: 0,
-                    y: "-50%",
-                    transition: { duration: 0.25 },
-                  },
-                }}
-                style={{
-                  position: "absolute", // 부모 제약 없이 화면 기준
-                  top: "50%", // 세로 중앙
-                  transform: "translateY(-50%)", // 축 기준 정확히 중앙
-                }}
-              >
-                <AboutLines />
-              </motion.div>
-            </motion.div>
-            <motion.div
-              variants={{
-                init: { scale: 1, opacity: 1 },
-                about: {
-                  scale: 2,
-                  opacity: 0.5,
-                },
-                mypage: {
-                  opacity: 0.5,
-                },
-              }}
-              transition={{
-                type: "spring",
-                stiffness: 100,
-                damping: 20,
-                duration: 1,
-                ease: "easeIn",
-                duration: 0.5,
-              }}
-            >
-              <Canvas
-                shadows={true}
-                style={{
-                  height: "100vh",
-                  width: "100vw",
-                  // background: COLORS.background,
-                }}
-                camera={{
-                  position: [-300, -180, 400],
-                  rotation: [0.5, -0.79, 0.37],
-                  fov: 50,
-                }}
-              >
-                <fog attach="fog" args={["#fefefe", 100, 500]} />
-                <SceneContent
-                  mode={mode}
-                  hoveredPlane={hoveredPlane}
-                  hoveredRing={hoveredRing}
-                  setHoveredPlane={setHoveredPlane}
-                  setHoveredRing={setHoveredRing}
-                  onPreviewRequest={onPreviewRequest}
-                />
-              </Canvas>
-            </motion.div>
-            <motion.div
-              style={{
-                position: "relative",
-                width: "30vw",
-                height: "100vh",
-              }}
-              initial="init"
-              animate={mode}
-            >
-              <motion.div
-                variants={{
-                  init: { opacity: 0, x: 0, y: "-50%" },
-                  mypage: {
-                    opacity: 1,
-                    x: 100,
-                    y: "-50%",
-                    transition: { duration: 0.25 },
-                  },
-                }}
-                style={{
-                  position: "absolute", // 부모 제약 없이 화면 기준
-                  top: "50%", // 세로 중앙
-                  left: -100,
-                  transform: "translateY(-50%)", // 축 기준 정확히 중앙
-                  color: "#fff",
-                  width: "80%",
-                }}
-              >
-                <Mypage id={id} setId={setId} initialData={initialData} />
-              </motion.div>
-            </motion.div>
-          </div>
+            <CameraZoom mode={mode} />
+            <fog attach="fog" args={["#fefefe", 100, 500]} />
+            <SceneContent
+              mode={mode}
+              hoveredPlane={hoveredPlane}
+              hoveredRing={hoveredRing}
+              setHoveredPlane={setHoveredPlane}
+              setHoveredRing={setHoveredRing}
+              onPreviewRequest={onPreviewRequest}
+            />
+          </Canvas>
         </motion.div>
-      </motion.div>
 
-      <HoverDescription
-        align="left"
-        visible={hoveredPlane}
-        title="Life Card"
-        text="이곳은 탭형 인터페이스를 표현한 오브젝트입니다."
-        onPreviewRequest={onPreviewRequest}
-      />
-      <HoverDescription
-        align="right"
-        visible={hoveredRing}
-        title="Life Page"
-        text="이곳은 이미지가 링 형태로 배치된 오브젝트입니다."
-        onPreviewRequest={onPreviewRequest}
-      />
+        {/* 오른쪽 마이페이지 패널 (너비 380px, 슬라이드 인/아웃) */}
+        <AnimatePresence>
+          {mode === "mypage" && (
+            <motion.aside
+              key="mypage-panel"
+              initial={{ x: 380, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 380, opacity: 0 }}
+              transition={TRANSITION}
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                height: "100%",
+                width: 380,
+                background: "rgba(20,20,20,0.9)",
+                color: "#fff",
+                boxShadow: "0 0 24px rgba(0,0,0,0.35)",
+                overflow: "auto",
+                willChange: "transform, opacity",
+                zIndex: 3,
+              }}
+            >
+              <div style={{ padding: 16 }}>
+                {/* Mypage 내에서도 setMode를 사용할 수 있게 전달
+                    -> 닫기 시 setMode("default") 호출하면 패널이 오른쪽으로 빠지고 AboutLines 복귀 */}
+                <Mypage
+                  id={id}
+                  setId={setId}
+                  initialData={initialData}
+                  setMode={setMode}
+                />
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
+
 export default Main3FGraphic;

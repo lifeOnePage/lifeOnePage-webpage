@@ -9,7 +9,7 @@ export function renderShellMessages(
   onEnter,
   loading
 ) {
-  console.log(input, inputIndex)
+  // console.log(input, inputIndex)
   return messages.map((msg, i) => (
     <div
       key={i}

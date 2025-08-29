@@ -357,7 +357,9 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   const handleLogout = async () => {
     await auth.signOut();
     // window.location.reload(); // 간단히 새로고침으로 로그인 화면으로
+
     router.push(`/`);
+
   };
 
   // OrbitControls onChange -> ringRef.current.updateLeftmost()
@@ -385,7 +387,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
     }
     setActiveCategory(catName);
   }
-  console.log(isMe);
+
   return (
     <div
       style={{

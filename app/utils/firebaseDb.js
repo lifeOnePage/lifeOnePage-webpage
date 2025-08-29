@@ -59,6 +59,7 @@ export async function saveUsername(uid, name) {
       success: true,
       message: "사용자 이름이 성공적으로 저장되었습니다.",
     };
+
   } catch (error) {
     console.error("사용자 이름 저장 중 오류 발생:", error);
     return { success: false, message: "이름 저장에 실패했습니다." };

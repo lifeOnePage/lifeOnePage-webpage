@@ -104,11 +104,10 @@ function ImageRingComponent(
   }, [loadedImgTextures, loadedVideoTextures]);
 
   async function setCatSubCat(person) {
-
     const { total, cats, subcats } = await createcatsAndSubcats(
       person.photoGallery
     );
-    
+
     console.log(cats, subcats);
     await setCategories(cats);
     await setSubcategories(subcats);
@@ -117,7 +116,6 @@ function ImageRingComponent(
 
   useEffect(() => {
     setCatSubCat(person);
-
   }, [person]);
   // console.log(categories)
 
@@ -486,8 +484,15 @@ function ImageRingComponent(
     ).normalize();
 
     // 원래 위치에서 방향 벡터로 밀기
+    console.log()
     const origPos = positionsRef.current[candidateIndex];
-    const scalar = candidateIndex > idxTotal ? 0 : 60;
+    // console.log(candidateIndex)
+    const scalar =
+      candidateIndex > idxTotal ||
+      candidateIndex == 0 ||
+      candidateIndex == idxTotal - 1
+        ? 0
+        : 60;
     const offset = direction.clone().multiplyScalar(scalar); // 30 정도 앞으로
 
     candidate.position.set(
@@ -525,7 +530,7 @@ function ImageRingComponent(
       // console.log(isInCategory);
 
       // target 값 설정
-      const targetY = isInCategory ? 300 : 0;
+      const targetY = isInCategory ? 0 : 0;
 
       // 현재 y 위치에서 targetY로 lerp
       mesh.position.lerp(mesh.position.clone().setY(targetY), 0.08);
@@ -581,12 +586,19 @@ function ImageRingComponent(
     }
 
     {
-      if (
-        !spriteRef.current ||
-        !meshArray.current[leftmostIndexRef.current] ||
-        !geometryRef.current
-      )
-        return;
+      // console.log(
+      //   spriteRef.current,
+      //   leftmostIndexRef.current,
+      //   meshArray.current[leftmostIndexRef.current],
+      //   geometryRef.current
+      // )
+      // if (
+      //   !spriteRef.current ||
+      //   !meshArray.current[leftmostIndexRef.current] ||
+      //   !geometryRef.current
+      // )
+      //   return;
+      if (leftmostIndexRef.current >= idxTotal) return;
 
       const sprite = spriteRef.current;
       const thumbnail = meshArray.current[leftmostIndexRef.current];

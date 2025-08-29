@@ -4,20 +4,29 @@
 import { useRef, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import PreviewHeader from "./components/PreviewHeader";
-import MemorialPage from "./memorial/MemorialPage";
+// import MemorialPage from "./memorial/MemorialPage";
 import { MAIN_THEME } from "./styles/colorConfig";
-import SelectModal from "./components/SelectModal";
-import SelectModalForAlreadyCreated from "./components/SelectModalForAlreadyCreated";
+// import SelectModal from "./components/SelectModal";
+// import SelectModalForAlreadyCreated from "./components/SelectModalForAlreadyCreated";
 import { auth, firestore } from "./firebase/firebaseConfig";
 import AuthOverlay from "./memorial/AuthOverlay";
 import { useRouter } from "next/navigation";
 import { useUser } from "./contexts/UserContext";
+import AboutSweep from "./components/AboutSweep";
 import { view } from "framer-motion";
 
 // SceneWrapper는 R3F 기반 3D 컴포넌트
 const Main3FGraphic = dynamic(() => import("./components/Main3FGraphic"), {
   ssr: false,
 });
+const SelectModal = dynamic(() => import("./components/SelectModal"), {
+  ssr: false,
+});
+const SelectModalForAlreadyCreated = dynamic(() => import("./components/SelectModalForAlreadyCreated"), {
+  ssr: false,
+});
+const MemorialPage = dynamic(() => import("./memorial/MemorialPage"), { ssr: false });
+
 
 export default function Home() {
   const scrollRef = useRef(null);
@@ -32,8 +41,10 @@ export default function Home() {
   const [authlayerVisible, setAuthlayerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const { user, initialData, dataLoading } = useUser();
+  console.log(user, initialData)
 
   const [type, setType] = useState("card");
+  const [trigger, setTrigger] = useState(false);
   const router = useRouter();
 
   const handleScrollToPreview = (viewType) => {
@@ -92,11 +103,21 @@ export default function Home() {
         <Main3FGraphic
           onPreviewRequest={(v) => handleScrollToPreview(v)}
           initialData={initialData}
+          setTrigger={(b)=>setTrigger(b)}
         />
       </div>
 
       {/* Sticky 감지용 포인트 */}
       <div ref={previewTopRef}></div>
+      <div
+        style={{
+          height: "100vh",
+          backgroundColor: "white",
+          position: "relative",
+        }}
+      >
+        <AboutSweep trigger={trigger} setTrigger={(b)=>setTrigger(b)}/>
+      </div>
 
       {/* 미리보기 영역 */}
       <div ref={scrollRef} style={{ height: "300vh" }}>
