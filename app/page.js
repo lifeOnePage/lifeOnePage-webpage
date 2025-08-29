@@ -4,10 +4,10 @@
 import { useRef, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import PreviewHeader from "./components/PreviewHeader";
-import MemorialPage from "./memorial/MemorialPage";
+// import MemorialPage from "./memorial/MemorialPage";
 import { MAIN_THEME } from "./styles/colorConfig";
-import SelectModal from "./components/SelectModal";
-import SelectModalForAlreadyCreated from "./components/SelectModalForAlreadyCreated";
+// import SelectModal from "./components/SelectModal";
+// import SelectModalForAlreadyCreated from "./components/SelectModalForAlreadyCreated";
 import { auth, firestore } from "./firebase/firebaseConfig";
 import AuthOverlay from "./memorial/AuthOverlay";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,14 @@ import { view } from "framer-motion";
 const Main3FGraphic = dynamic(() => import("./components/Main3FGraphic"), {
   ssr: false,
 });
+const SelectModal = dynamic(() => import("./components/SelectModal"), {
+  ssr: false,
+});
+const SelectModalForAlreadyCreated = dynamic(() => import("./components/SelectModalForAlreadyCreated"), {
+  ssr: false,
+});
+const MemorialPage = dynamic(() => import("./memorial/MemorialPage"), { ssr: false });
+
 
 export default function Home() {
   const scrollRef = useRef(null);

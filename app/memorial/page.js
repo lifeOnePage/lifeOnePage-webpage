@@ -5,8 +5,11 @@ import { auth, firestore } from "../firebase/firebaseConfig";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import AuthOverlay from "./AuthOverlay";
-import MemorialPage from "./MemorialPage";
+// import MemorialPage from "./MemorialPage";
 import { useUser } from "../contexts/UserContext";
+import dynamic from "next/dynamic";
+const MemorialPage = dynamic(() => import("./MemorialPage"), { ssr: false });
+
 
 export default function MemorialPageWrapper() {
   const [showAuth, setShowAuth] = useState(false); // 로그인 요구 여부
