@@ -16,7 +16,7 @@ import Profile from "../components/Profile";
 import Lifestory from "../components/Lifestory";
 import { auth } from "../firebase/firebaseConfig";
 import {
-  uploadGalleryImages,
+  // uploadGalleryImages,
   uploadProfileImage,
 } from "../utils/firebaseStorage";
 import {
@@ -199,23 +199,23 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
       if ((type === "lifestory" || type === "all") && storyData) {
         await saveLifestorySection(user.uid, storyData);
       }
-      if (type === "gallery" && galleryData) {
-        const processedGallery = {};
-        for (const category in galleryData) {
-          const files = galleryData[category].map((item) => item.file);
-          const captions = galleryData[category].map((item) => item.caption);
-          const urls = await uploadGalleryImages(files, user.uid, category);
-          processedGallery[category] = urls.map((url, i) => ({
-            url,
-            caption: captions[i],
-          }));
-          await savePhotoGalleryCategory(
-            user.uid,
-            category,
-            galleryData[category]
-          );
-        }
-      }
+      // if (type === "gallery" && galleryData) {
+      //   const processedGallery = {};
+      //   for (const category in galleryData) {
+      //     const files = galleryData[category].map((item) => item.file);
+      //     const captions = galleryData[category].map((item) => item.caption);
+      //     const urls = await uploadGalleryImages(files, user.uid, category);
+      //     processedGallery[category] = urls.map((url, i) => ({
+      //       url,
+      //       caption: captions[i],
+      //     }));
+      //     await savePhotoGalleryCategory(
+      //       user.uid,
+      //       category,
+      //       galleryData[category]
+      //     );
+      //   }
+      // }
 
       setShowSuccessOverlay(true);
       setIsUpdated(false);
