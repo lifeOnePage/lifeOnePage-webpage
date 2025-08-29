@@ -12,6 +12,7 @@ import { auth, firestore } from "./firebase/firebaseConfig";
 import AuthOverlay from "./memorial/AuthOverlay";
 import { useRouter } from "next/navigation";
 import { useUser } from "./contexts/UserContext";
+import AboutSweep from "./components/AboutSweep";
 import { view } from "framer-motion";
 
 // SceneWrapper는 R3F 기반 3D 컴포넌트
@@ -32,8 +33,10 @@ export default function Home() {
   const [authlayerVisible, setAuthlayerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const { user, initialData, dataLoading } = useUser();
+  console.log(user, initialData)
 
   const [type, setType] = useState("card");
+  const [trigger, setTrigger] = useState(false);
   const router = useRouter();
 
   const handleScrollToPreview = (viewType) => {
@@ -92,11 +95,21 @@ export default function Home() {
         <Main3FGraphic
           onPreviewRequest={(v) => handleScrollToPreview(v)}
           initialData={initialData}
+          setTrigger={(b)=>setTrigger(b)}
         />
       </div>
 
       {/* Sticky 감지용 포인트 */}
       <div ref={previewTopRef}></div>
+      <div
+        style={{
+          height: "100vh",
+          backgroundColor: "white",
+          position: "relative",
+        }}
+      >
+        <AboutSweep trigger={trigger} setTrigger={(b)=>setTrigger(b)}/>
+      </div>
 
       {/* 미리보기 영역 */}
       <div ref={scrollRef} style={{ height: "300vh" }}>

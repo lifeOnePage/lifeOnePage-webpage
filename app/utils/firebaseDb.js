@@ -6,6 +6,9 @@ import {
   updateDoc,
   serverTimestamp,
   getDocs,
+  collection,
+  query,
+  where,
 } from "firebase/firestore";
 import { app } from "../firebase/firebaseConfig";
 
@@ -20,6 +23,44 @@ export async function fetchUserData(uid) {
   const ref = doc(db, "users", uid);
   const snap = await getDoc(ref);
   return snap.exists() ? snap.data() : null;
+}
+
+/**
+ * Saves a new username for a user if it's not already taken.
+ * @param {string} uid - The user's unique ID.
+ * @param {string} name - The new username to save.
+ * @returns {Promise<{success: boolean, message: string}>} - An object indicating success or failure.
+ */
+export async function saveUsername(uid, name) {
+  // 1. **입력값 유효성 검사 (Validate Inputs)**
+  if (!uid || !name) {
+    return { success: false, message: "사용자 ID와 이름은 필수입니다." };
+  }
+
+  const usersCol = collection(db, "users");
+  const q = query(usersCol, where("username", "==", name));
+
+  try {
+    // 2. **사용자 이름 중복 확인 (Check for Duplicate Username)**
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      // 동일한 사용자 이름을 가진 문서가 이미 존재하는 경우
+      return { success: false, message: "이미 사용중인 이름입니다." };
+    }
+
+    // 3. **사용자 이름 업데이트 (Update Username)**
+    const userDocRef = doc(db, "users", uid);
+    await updateDoc(userDocRef, {
+      username: name
+    });
+
+    return { success: true, message: "사용자 이름이 성공적으로 저장되었습니다." };
+
+  } catch (error) {
+    console.error("사용자 이름 저장 중 오류 발생:", error);
+    return { success: false, message: "이름 저장에 실패했습니다." };
+  }
 }
 
 /**
@@ -149,7 +190,7 @@ users (컬렉션)
         │               ├── title: "졸업식"
         │               ├── year: "2020"
         │               └── image: "https://..."
-        └── 2020 (문서)
+        └── 2021 (문서)
               └── items (컬렉션)
                   └── item1 (문서)
                         ├── title: "졸업식"

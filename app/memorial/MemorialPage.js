@@ -356,7 +356,8 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   // 로그아웃
   const handleLogout = async () => {
     await auth.signOut();
-    window.location.reload(); // 간단히 새로고침으로 로그인 화면으로
+    // window.location.reload(); // 간단히 새로고침으로 로그인 화면으로
+    router.push(`/`)
   };
 
   // OrbitControls onChange -> ringRef.current.updateLeftmost()
@@ -384,7 +385,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
     }
     setActiveCategory(catName);
   }
-
+  console.log(isMe)
   return (
     <div
       style={{
@@ -394,7 +395,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         zIndex:1000,
       }}
     >
-      {!isBeforeLogin && (
+      {isMe && (
         <FloatingToolbar
           person={person}
           userId={uid}
