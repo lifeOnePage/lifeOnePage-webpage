@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoFold, GoUnfold } from "react-icons/go";
+import { SlArrowDown, SlArrowRight } from "react-icons/sl";
 
 export default function GalleryNav({
   person,
@@ -62,6 +63,7 @@ export default function GalleryNav({
         gap: "20px",
         zIndex: "999",
         padding: "10px 20px",
+        width:120,
         alignItems: "flex-start",
         backgroundColor: "#00000088",
         maxWidth: "90vw",
@@ -70,10 +72,10 @@ export default function GalleryNav({
       {!openCat && (
         <motion.div
           whileHover={{ scale: 1.05 }}
-          style={{ cursor: "pointer", color: "white",margin:"10px 0px 20px 20px" }}
+          style={{ cursor: "pointer", color: "white",margin:"10px 0px",}}
           onClick={(e) => handleCatClick(e, "유년시절")}
         >
-          <GoFold size={20} />
+          <SlArrowRight size={20} />
         </motion.div>
       )}
 
@@ -89,10 +91,10 @@ export default function GalleryNav({
           >
             <motion.div
               whileHover={{ scale: 1.05 }}
-              style={{ cursor: "pointer", margin:"10px 0px 0px 20px", color: "white" }}
+              style={{ cursor: "pointer", margin:"10px 0px", color: "white" }}
               onClick={(e) => handleCatClick(e, null)}
             >
-              <GoUnfold size={20} />
+              <SlArrowDown size={20} />
             </motion.div>
 
             <motion.div

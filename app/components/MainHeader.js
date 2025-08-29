@@ -1,6 +1,6 @@
 import { BLACK } from "../styles/colorConfig";
 
-export default function MainHeader() {
+export default function MainHeader({ setMode, setTrigger }) {
   return (
     <div
       style={{
@@ -18,7 +18,7 @@ export default function MainHeader() {
         right: 0,
         height: 40,
         zIndex: 1000,
-        color:BLACK
+        color: BLACK,
         // backdropFilter: "brightness(5) blur(40px)",
       }}
     >
@@ -58,6 +58,10 @@ export default function MainHeader() {
             display: "flex",
             fontWeight: 500,
           }}
+          onClick={() => {
+            setMode("about");
+            setTrigger(true)
+          }}
         >
           About
         </div>
@@ -69,6 +73,7 @@ export default function MainHeader() {
             display: "flex",
             fontWeight: 500,
           }}
+          onClick={() => setMode("mypage")}
         >
           Mypage
         </div>

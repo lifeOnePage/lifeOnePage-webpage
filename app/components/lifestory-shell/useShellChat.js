@@ -102,7 +102,7 @@ export function useShellChat({ userId, person, onComplete }) {
     onComplete(story, threadId);
     setLoading(false);
   };
-  console.log("inputIndex", inputIndex, "messages.length", messages.length);
+  // console.log("inputIndex", inputIndex, "messages.length", messages.length);
 
 
   return {
