@@ -1,0 +1,161 @@
+.card-page {
+  font-family: "Pretendard", sans-serif;
+  padding: 40px;
+  position: relative;
+  background: #fff;
+  min-height: 100vh;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  color: #000;
+  align-items: flex-end;
+  border-bottom: 1px solid black;
+  margin-bottom: 40px;
+}
+
+.tabs button {
+  font-size: 14px;
+  padding: 6px 16px;
+  border: 1px solid black;
+  background: white;
+  cursor: pointer;
+}
+
+.tab-year {
+  background: #fff;
+  color: #000;
+  font-weight: bold;
+  padding: 6px 16px;
+  border: 1px solid black;
+  border-right: 1px solid #000;
+  border-top-left-radius: 12px;
+}
+
+/* 첫 번째 이벤트 버튼 */
+.tab-event:first-child {
+  border-top-left-radius: 0;
+}
+
+.tab-main {
+  font-weight: bold;
+  border-radius: 8px 8px 0 0;
+}
+
+.tab-main.active {
+  background: black;
+  color: white;
+}
+
+.tab-year-group {
+  display: flex;
+  margin-left: 5px;
+}
+
+.tab-year {
+  font-weight: bold;
+  border-right: none;
+}
+
+.tab-event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-thumbnail {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.tab-event:last-child {
+  border-radius: 0 8px 0 0;
+}
+
+.tab-event.active,
+.tab-year.active {
+  background: black;
+  color: white;
+}
+
+.tab-add {
+  margin-left: 10px;
+  font-size: 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.content {
+  display: flex;
+  gap: 40px;
+}
+
+.profile-image img {
+  width: 220px;
+  height: 300px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid black;
+}
+
+.profile-text {
+  max-width: 600px;
+}
+
+.profile-text h1 {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.profile-text .date {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.profile-text .place {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.profile-text .description {
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.watermark {
+  position: absolute;
+  right: 20px;
+  font-size: 90px;
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.05);
+  pointer-events: none;
+  font-family: "Yde street", sans-serif;
+}
+
+.qr {
+  position: absolute;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: gray;
+}
+
+.qr img {
+  width: 40px;
+  margin-bottom: 4px;
+}
+
+.profile-text h1,
+.profile-text .date,
+.profile-text .place,
+.profile-text .description {
+  color: #000;
+}
