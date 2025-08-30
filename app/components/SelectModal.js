@@ -50,7 +50,7 @@ export default function SelectModal({ type, isOpen, onClose, onStart }) {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        zIndex: 1100,
+        zIndex: 2100,
         transition: "opacity 0.3s",
         opacity: isClosing ? 0 : 1,
       }}
