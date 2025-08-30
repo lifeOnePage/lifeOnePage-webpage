@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "./contexts/UserContext";
 import AboutSweep from "./components/AboutSweep";
 import { view } from "framer-motion";
+import Page from "./card/page";
 
 // SceneWrapper는 R3F 기반 3D 컴포넌트
 const Main3FGraphic = dynamic(() => import("./components/Main3FGraphic"), {
@@ -137,7 +138,7 @@ export default function Home() {
         </div>
 
         <div>
-          {selectedPreview === "card" && <div>카드 포맷 미리보기 컴포넌트</div>}
+          {selectedPreview === "card" && <Page />}
           {selectedPreview === "page" && (
             <div>
               <MemorialPage />

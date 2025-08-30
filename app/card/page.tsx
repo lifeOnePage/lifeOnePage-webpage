@@ -9,10 +9,11 @@ import {
   fetchUserData,
   fetchTimeline,
 } from "../utils/firebaseDb.js";
-import { auth } from "../firebase/firebaseConfig";
+import { app, auth } from "../firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 
 import "./cardPage.css";
+import { doc, getFirestore, serverTimestamp, updateDoc } from "firebase/firestore";
 
 type TimelineItem = {
   year: string;
@@ -285,6 +286,12 @@ export default function Page() {
         birthPlace: birthplace,
         profileImageUrl: image,
       });
+      const db = getFirestore(app);
+      const ref = doc(db, "users", uid);
+      await updateDoc(ref, {
+        isCardCreated:true,
+        cardUpdatedAt:serverTimestamp()
+      })
       await saveLifestorySection(uid, { motto: "", story: bio });
       await saveCardTimeline(uid, [], {} as any);
       alert("저장되었습니다.");
