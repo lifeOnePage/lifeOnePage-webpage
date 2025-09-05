@@ -15,6 +15,7 @@ import { useUser } from "./contexts/UserContext";
 import AboutSweep from "./components/AboutSweep";
 import { view } from "framer-motion";
 import Page from "./card/page";
+import AboutInfo from "./components/AboutInfo";
 
 // SceneWrapper는 R3F 기반 3D 컴포넌트
 const Main3FGraphic = dynamic(() => import("./components/Main3FGraphic"), {
@@ -23,11 +24,15 @@ const Main3FGraphic = dynamic(() => import("./components/Main3FGraphic"), {
 const SelectModal = dynamic(() => import("./components/SelectModal"), {
   ssr: false,
 });
-const SelectModalForAlreadyCreated = dynamic(() => import("./components/SelectModalForAlreadyCreated"), {
+const SelectModalForAlreadyCreated = dynamic(
+  () => import("./components/SelectModalForAlreadyCreated"),
+  {
+    ssr: false,
+  }
+);
+const MemorialPage = dynamic(() => import("./memorial/MemorialPage"), {
   ssr: false,
 });
-const MemorialPage = dynamic(() => import("./memorial/MemorialPage"), { ssr: false });
-
 
 export default function Home() {
   const scrollRef = useRef(null);
@@ -42,7 +47,7 @@ export default function Home() {
   const [authlayerVisible, setAuthlayerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const { user, initialData, dataLoading } = useUser();
-  console.log(user, initialData)
+  console.log(user, initialData);
 
   const [type, setType] = useState("card");
   const [trigger, setTrigger] = useState(false);
@@ -104,7 +109,7 @@ export default function Home() {
         <Main3FGraphic
           onPreviewRequest={(v) => handleScrollToPreview(v)}
           initialData={initialData}
-          setTrigger={(b)=>setTrigger(b)}
+          setTrigger={(b) => setTrigger(b)}
         />
       </div>
 
@@ -113,11 +118,12 @@ export default function Home() {
       <div
         style={{
           height: "100vh",
-          backgroundColor: "white",
+          backgroundColor: "black",
           position: "relative",
         }}
       >
-        <AboutSweep trigger={trigger} setTrigger={(b)=>setTrigger(b)}/>
+        {/* <AboutSweep trigger={trigger} setTrigger={(b) => setTrigger(b)} /> */}
+        <AboutInfo />
       </div>
 
       {/* 미리보기 영역 */}
