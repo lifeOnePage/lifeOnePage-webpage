@@ -16,6 +16,7 @@ import AboutSweep from "./components/AboutSweep";
 import { view } from "framer-motion";
 import Page from "./card/page";
 import AboutInfo from "./components/AboutInfo";
+import AboutDetail from "./components/AboutDetail";
 
 // SceneWrapper는 R3F 기반 3D 컴포넌트
 const Main3FGraphic = dynamic(() => import("./components/Main3FGraphic"), {
@@ -126,8 +127,13 @@ export default function Home() {
         <AboutInfo />
       </div>
 
-      {/* 미리보기 영역 */}
-      <div ref={scrollRef} style={{ height: "300vh" }}>
+      {/* 상세페이지 */}
+      <div>
+        <AboutDetail />
+      </div>
+
+      {/* 미리보기 영역 - 이전 버전 */}
+      {/* <div ref={scrollRef} style={{ height: "300vh" }}>
         <div
           style={{
             position: isSticky ? "sticky" : "relative",
@@ -226,7 +232,7 @@ export default function Home() {
             </button>
           </div>
         )}
-      </div>
+      </div> */}
     </div>
   );
 }
