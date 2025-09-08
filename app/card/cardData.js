@@ -30,6 +30,7 @@ export const DEFAULT_ITEMS = [
     location: "경기도 성남시 분당구",
     description:
       "조용한 초겨울에 태어났다. 창밖의 빛과 그림자를 오래 바라보던 아이였고, 손에 닿는 것들의 질감을 유난히 또렷하게 기억했다.",
+    image: "/images/timeline/4.jpeg",
   },
   {
     year: "2006",
@@ -38,14 +39,16 @@ export const DEFAULT_ITEMS = [
     location: "분당 정자동",
     description:
       "창틀에 떨어진 그림자와 화분 잎맥을 따라 그리며 작은 공책을 채웠다. 사소한 변화를 적어 두면 마음이 차분해진다는 사실을 처음 배웠다.",
+    image: "/images/timeline/1.jpg",
   },
   {
     year: "2006",
     title: "재밌는 하루",
-    date: "2006.05.10",
-    location: "분당 정자동",
+    date: "2006.07.12",
+    location: "HOME SWEET HOME!",
     description:
-      "사소한 변화를 적어 두면 마음이 차분해진다는 사실을 처음 배웠다.",
+      "쿠키를 드디어 만들 수 있게 되었다! 카페를 준비하는 재미를 느끼고 있는 요즘이다.",
+    image: "/images/timeline/3.jpeg",
   },
   {
     year: "2009",
@@ -54,6 +57,7 @@ export const DEFAULT_ITEMS = [
     location: "분당 중앙도서관",
     description:
       "창가에 앉아 사람들의 발자국 소리와 바람결을 문장으로 옮겼다. 이 날 이후의 기록은 일기를 넘어 작은 관찰 보고서가 되었다.",
+    image: "/images/timeline/school_image.jpg",
   },
   {
     year: "2010",
@@ -62,6 +66,7 @@ export const DEFAULT_ITEMS = [
     location: "부산 해운대",
     description:
       "처음 맞은 바닷바람에 눈이 시렸지만 파도 소리는 오래 남았다. 젖은 필름처럼 하루의 색이 마음에 천천히 새겨졌다.",
+    image: "/images/timeline/newjeans_image.jpg",
   },
 ];
 

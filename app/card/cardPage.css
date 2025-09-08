@@ -67,8 +67,8 @@ body,
   gap: 0;
   border: var(--hair) solid var(--rule);
   margin-inline: auto;
-  width: 65vw;
-  height: 70vh;
+  min-height: 60vh;
+  min-width: 50vw;
 }
 
 .board-spine {
@@ -112,9 +112,8 @@ body,
 }
 
 .poster-col {
-  margin-top: auto;
   display: grid;
-  grid-template-rows: 1fr auto auto;
+  grid-template-rows: minmax(0, 8fr) auto minmax(0, 2fr);
   min-height: 0;
 }
 
@@ -135,6 +134,7 @@ body,
   min-height: 0;
   grid-row: 1;
   margin-left: 2.5rem;
+  height: 100%;
 }
 
 .rule-mid {
@@ -145,7 +145,7 @@ body,
 
 .photo {
   position: relative;
-  height: clamp(300px, 38vh, 440px);
+  height: clamp(300px, 60vh, 440px);
   margin: 0;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -180,6 +180,7 @@ body,
 .meta {
   padding-right: 8px;
   padding-left: 1.5vw;
+  margin-top: auto;
   align-self: end;
 }
 
