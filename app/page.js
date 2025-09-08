@@ -146,7 +146,7 @@ export default function Home() {
           )}
         </div>
 
-        <button
+        {/* <button
           onClick={() => {
             console.log(isSelectModalOpen);
             if (!user) setIsSelectModalOpen(true);
@@ -167,7 +167,7 @@ export default function Home() {
           }}
         >
           직접 만들기
-        </button>
+        </button> */}
         <SelectModal
           type={type}
           isOpen={isSelectModalOpen}

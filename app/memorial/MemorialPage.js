@@ -75,6 +75,13 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   const topImageRef = useRef();
   const controlsRef = useRef(null);
   const ringRef = useRef();
+  const snapRef = useRef({
+    vh: 0,
+    locked: true, // < 200vh 에선 잠금
+    animating: false,
+    touchStartY: 0,
+    t: 0, // timeout id
+  });
 
   const { setDataLoading } = useUser();
 
@@ -87,6 +94,22 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   const videoPaths = useMemo(() => {
     return Array.from({ length: 2 }, (_, i) => `/videos/video${i}.mp4`);
   }, []);
+
+  const isTypingIntoEditable = (e) => {
+    const el = e.target || document.activeElement;
+    if (!el) return false;
+    if (el.isContentEditable) return true;
+    const closestEditable = el.closest?.(
+      '[contenteditable="true"], [role="textbox"]'
+    );
+    if (closestEditable) return true;
+
+    const tag = (el.tagName || "").toLowerCase();
+    if (tag === "textarea") return true;
+    if (tag === "input") return true; // 모든 input에서 스냅 키 무시(안전)
+
+    return false;
+  };
 
   useEffect(() => {
     if (!initialData) {
@@ -151,6 +174,121 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
     setIsBeforeLogin(false);
     setIsPreview(false);
   }, [initialData]);
+  useEffect(() => {
+    const st = snapRef.current;
+    const EPS = 1;
+
+    const updateVh = () => {
+      st.vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    };
+    const inLockZone = () => window.scrollY < 2 * st.vh - EPS;
+
+    const clearAnimFlag = () => {
+      st.animating = false;
+      st.locked = inLockZone();
+    };
+
+    const smoothTo = (top) => {
+      st.animating = true;
+      window.scrollTo({ top, behavior: "smooth" });
+      clearTimeout(st.t);
+      // 브라우저별 스무스 시간 여유
+      st.t = setTimeout(clearAnimFlag, 500);
+    };
+
+    const clamp = (n, a, b) => Math.min(Math.max(n, a), b);
+    const idxAt = () => Math.round(window.scrollY / st.vh);
+
+    const goSnap = (dir) => {
+      const i = idxAt();
+      // 200vh에서 아래로는 잠금 해제 → 자유 스크롤
+      if (i === 2 && dir > 0) {
+        st.locked = false;
+        return;
+      }
+      const next = clamp(i + dir, 0, 2);
+      smoothTo(next * st.vh);
+    };
+
+    const onWheel = (e) => {
+      if (!st.locked) return; // 자유 구간
+      e.preventDefault(); // 기본 스크롤 차단
+      if (st.animating) return;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      goSnap(dir);
+    };
+
+    const onKey = (e) => {
+      // ❶ 입력중이면 아무것도 하지 않음 (스페이스/화살표 등 모두 허용)
+      if (isTypingIntoEditable(e)) return;
+
+      // ❷ 수정키가 눌린 경우(복사/검색 등) 무시
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (!st.locked) return; // 자유 구간이면 기본 동작
+
+      const down = ["PageDown", "ArrowDown", " "]; // space = 아래
+      const up = ["PageUp", "ArrowUp", "Shift "]; // Shift+Space = 위로
+
+      // Space/Shift+Space 처리
+      if (e.key === " ") {
+        e.preventDefault();
+        goSnap(e.shiftKey ? -1 : 1);
+        return;
+      }
+
+      // 방향키/페이지키 처리
+      if ([...down, ...up].includes(e.key)) {
+        e.preventDefault();
+        goSnap(down.includes(e.key) ? 1 : -1);
+      }
+    };
+
+    const onTouchStart = (e) => {
+      st.touchStartY = e.touches[0]?.clientY ?? 0;
+    };
+    const onTouchEnd = (e) => {
+      if (!st.locked) return;
+      const endY = e.changedTouches?.[0]?.clientY ?? st.touchStartY;
+      const dy = st.touchStartY - endY;
+      if (Math.abs(dy) < 8) return; // 탭/미세 스크롤 무시
+      goSnap(dy > 0 ? 1 : -1);
+    };
+
+    const onScroll = () => {
+      // 자유구간 진입/복귀 자동 전환
+      if (!st.animating) st.locked = inLockZone();
+    };
+
+    const onResize = () => {
+      updateVh();
+      // 리사이즈 직후 스냅 오차 방지: 근처 스냅 포인트로 살짝 정렬
+      if (st.locked) {
+        const i = idxAt();
+        smoothTo(i * st.vh);
+      }
+    };
+
+    updateVh();
+    st.locked = inLockZone();
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: false }); // 중요!
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: false });
+
+    return () => {
+      clearTimeout(st.t);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
 
   const handlePersonChange = (updatedPerson) => {
     setIsUpdated(true);
@@ -359,7 +497,6 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
     // window.location.reload(); // 간단히 새로고침으로 로그인 화면으로
 
     router.push(`/`);
-
   };
 
   // OrbitControls onChange -> ringRef.current.updateLeftmost()
@@ -387,6 +524,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
     }
     setActiveCategory(catName);
   }
+  console.log(isPreview);
 
   return (
     <div
@@ -395,6 +533,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         fontFamily: "pretendard",
         backgroundColor: BLACK,
         zIndex: 1000,
+        overscrollBehaviorY: "contain",
       }}
     >
       {isMe && (
@@ -465,6 +604,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         <Profile
           person={person}
           onPersonChange={handlePersonChange}
+          setIsUpdated={setIsUpdated}
           onSave={handleSave}
           userId={uid}
           isPreview={isPreview}
