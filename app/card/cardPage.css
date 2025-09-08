@@ -18,7 +18,6 @@
 body,
 .body {
   margin: 0;
-  min-height: 100vh;
   background: var(--bg);
   color: var(--text);
   font-family: "SUIT", system-ui, "Noto Sans KR", sans-serif;
@@ -54,11 +53,6 @@ body,
 }
 
 .container {
-  max-width: 1240px;
-  padding: 0px 6vw;
-  padding-top: 6vh;
-  margin-top: 5vh;
-  height: auto;
   display: flex;
 }
 
@@ -73,6 +67,8 @@ body,
   gap: 0;
   border: var(--hair) solid var(--rule);
   margin-inline: auto;
+  width: 65vw;
+  height: 70vh;
 }
 
 .board-spine {
@@ -108,9 +104,18 @@ body,
 
 .board-main {
   position: relative;
-  padding: 2rem;
-  padding-bottom: 1rem;
-  padding-left: 3rem;
+  padding: 2rem 2rem 0.5rem 0.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.poster-col {
+  margin-top: auto;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  min-height: 0;
 }
 
 .rule-left {
@@ -127,6 +132,9 @@ body,
   display: grid;
   grid-template-columns: 1.2fr 1px 0.8fr;
   align-items: start;
+  min-height: 0;
+  grid-row: 1;
+  margin-left: 2.5rem;
 }
 
 .rule-mid {
@@ -137,8 +145,7 @@ body,
 
 .photo {
   position: relative;
-  height: 100%;
-  /* border: 1px solid var(--rule); */
+  height: clamp(300px, 38vh, 440px);
   margin: 0;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -147,7 +154,7 @@ body,
 }
 .photo img {
   display: block;
-  width: 130%;
+  width: 100%;
   height: 100%;
   object-fit: cover;
 }
@@ -172,7 +179,7 @@ body,
 
 .meta {
   padding-right: 8px;
-  padding-left: 3vw;
+  padding-left: 1.5vw;
   align-self: end;
 }
 
@@ -180,12 +187,14 @@ body,
   margin-bottom: 24px;
 }
 .meta-label {
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  color: #111;
-  opacity: 0.7;
   margin-bottom: 8px;
-  font-weight: 500;
+
+  color: var(--Black, #121212);
+  font-family: "Yde street";
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 300;
+  line-height: 130%; /* 1.21875rem */
 }
 .meta-line {
   border-bottom: 1px solid var(--rule);
@@ -209,18 +218,16 @@ body,
   border: none;
   outline: none;
   background: transparent;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1.5px solid var(--rule);
   font-size: 16px;
-  padding: 0 2px 6px 0;
   opacity: 0.6;
 
-  color: #000;
-  font-family: "Helvetica Neue LT Std";
-  font-size: 1rem;
+  color: var(--Black, #121212);
+  font-family: "Wanted Sans Variable";
+  font-size: 0.9375rem;
   font-style: normal;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 130%;
-  letter-spacing: -0.0625rem;
 }
 .bio-text {
   color: #2f2f2f;
@@ -256,12 +263,12 @@ body,
   letter-spacing: -0.0625rem;
 }
 
-/* 하단 가로 분할선 - 더 여유로운 간격 */
 .rule-bottom {
   height: 1px;
   background: var(--rule);
   margin: 20px 0 20px;
   opacity: 0.3;
+  grid-row: 2;
 }
 
 .lower-row {
@@ -270,6 +277,7 @@ body,
   justify-content: space-between;
   gap: 20px;
   padding-bottom: 10px;
+  grid-row: 3;
 }
 .poster-title {
   color: #000;
@@ -447,5 +455,21 @@ body,
   }
   .poster-title {
     font-size: clamp(28px, 8vw, 56px);
+  }
+}
+
+:root {
+  --card-scale: 0.9;
+}
+
+.board--quad {
+  transform: scale(var(--card-scale));
+  transform-origin: top left;
+}
+
+@supports (zoom: 1) {
+  .board--quad {
+    zoom: var(--card-scale);
+    transform: none;
   }
 }

@@ -348,7 +348,7 @@ export default function LifeCardWithWheel() {
         }
         .ev.on .ev-title {
           color: #fff;
-          font-weight: 700;
+          font-weight: 300;
         }
         .ev-title {
           font-size: 18px;
