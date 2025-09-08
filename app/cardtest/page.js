@@ -1,27 +1,28 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import CardData from "./cardData.js";
+import CardData, { DEFAULT_ITEMS } from "./cardData.js";
 
 export default function LifeCardWithWheel() {
-  const data = useMemo(
-    () => [
-      { year: 2001, events: [{ title: "출생", desc: "돌잔치" }] },
-      { year: 2003, events: [{ title: "첫 등원", desc: "유치원 입학" }] },
-      { year: 2007, events: [{ title: "첫 여행", desc: "부모님과 해외여행" }] },
-      { year: 2015, events: [{ title: "중학교 입학" }] },
-      { year: 2020, events: [{ title: "대학 입학" }] },
-    ],
-    []
-  );
-  const years = data.map((d) => d.year);
+  const data = useMemo(() => {
+    const map = new Map();
+    DEFAULT_ITEMS.forEach((it) => {
+      const y = Number(it.year);
+      if (!map.has(y)) map.set(y, []);
+      map.get(y).push(it);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([year, events]) => ({ year, events }));
+  }, []);
+  const years = useMemo(() => data.map((d) => d.year), [data]);
 
-  const [rotation, setRotation] = useState(0); // deg (반원에서 -90~+90로 사용)
+  const [rotation, setRotation] = useState(0);
   const [activeYear, setActiveYear] = useState(years[0]);
   const [activeEventIdx, setActiveEventIdx] = useState(0);
 
-  const R = 140; // 반지름
-  const OUT = 20; // 바깥 라벨 오프셋
-  const targetDeg = 0; // 반원의 중앙(오른쪽) — 활성 각도
+  const R = 250;
+  const OUT = -30;
+  const targetDeg = 0;
 
   const dragging = useRef(false);
   const lastY = useRef(0);
@@ -66,7 +67,20 @@ export default function LifeCardWithWheel() {
   }, [activeYear]);
 
   const activeYearData = data.find((d) => d.year === activeYear) || data[0];
+  const eventsOfYear = activeYearData?.events ?? [];
+  const activeEvent = eventsOfYear[activeEventIdx] || null;
 
+  const controlledEvent = useMemo(() => {
+    if (!activeEvent) return null;
+    return {
+      year: Number(activeEvent.year),
+      title: activeEvent.title ?? "",
+      description: activeEvent.description ?? "",
+      date: activeEvent.date ?? `${activeYear}.01.01`,
+      location: activeEvent.location ?? "",
+      image: activeEvent.image ?? "/images/timeline/beach_image.jpg",
+    };
+  }, [activeEvent, activeYear]);
   return (
     <div className="wrap">
       <header className="hero">
@@ -80,7 +94,7 @@ export default function LifeCardWithWheel() {
 
       <main className="stage">
         <section className="card-area">
-          <CardData />
+          <CardData controlledEvent={controlledEvent} />
         </section>
 
         <aside
@@ -94,14 +108,8 @@ export default function LifeCardWithWheel() {
           onTouchMove={onPointerMove}
           onTouchEnd={onPointerUp}
         >
-          {/* 배경 반원(장식) — 카드 옆에서 시작해 뒤로 흐르는 느낌 */}
-          <div className="bg-semi" aria-hidden="true" />
-
-          {/* 반원 휠 */}
           <div className="semi-wheel" role="group" aria-label="Life wheel">
-            {/* 반원 링(테두리) */}
             <div className="semi-ring" />
-            {/* 바깥쪽에 붙는 연도 라벨들 */}
             {years.map((y, i) => {
               const step = 180 / years.length;
               const angle = -90 + i * step + rotation; // -90~+90
@@ -121,20 +129,17 @@ export default function LifeCardWithWheel() {
               );
             })}
           </div>
-
-          {/* 이벤트 패널 */}
+          <div className="wheel-col" aria-hidden="true" />
           <div className="events">
-            <div className="events-year">{activeYear}</div>
             <div className="events-rule" />
             <ul className="events-list">
-              {activeYearData.events.map((ev, idx) => (
+              {eventsOfYear.map((ev, idx) => (
                 <li key={idx}>
                   <button
                     className={`ev ${idx === activeEventIdx ? "on" : ""}`}
                     onClick={() => setActiveEventIdx(idx)}
                   >
                     <div className="ev-title">{ev.title}</div>
-                    {ev.desc && <div className="ev-desc">{ev.desc}</div>}
                   </button>
                 </li>
               ))}
@@ -142,6 +147,7 @@ export default function LifeCardWithWheel() {
           </div>
         </aside>
       </main>
+
       {/* <div className="buttons buttons-row">
         <button onClick={toggleEditPreview} className="btn-preview btn-large">
           {isEditing ? "미리보기" : "편집하기"}
@@ -177,20 +183,19 @@ export default function LifeCardWithWheel() {
         )}
       </div> */}
 
-      {/* 전역: 스크롤 방지 + CardData 내부 레일 숨기기 */}
       <style jsx global>{`
         html,
         body {
           margin: 0;
           height: 100%;
           background: #0f0f0f;
+          overflow: hidden;
         }
         .timeline-rail {
           display: none !important;
         }
       `}</style>
 
-      {/* 페이지 전용 스타일 */}
       <style jsx>{`
         .wrap {
           height: 100vh;
@@ -230,75 +235,57 @@ export default function LifeCardWithWheel() {
           display: grid;
           grid-template-columns: 1fr minmax(420px, 520px);
           align-items: center;
-          gap: 40px;
           background: #101010;
-
-          padding-top: 2rem;
         }
 
         .card-area {
           display: flex;
           align-items: center;
+          z-index: 2;
         }
 
         .right-pane {
           position: relative;
           height: 100%;
           display: grid;
-          grid-template-columns: auto 1fr;
+          grid-template-columns: ${R - 100}px 1fr;
           align-items: center;
-          gap: 28px;
           user-select: none;
           touch-action: none;
         }
 
-        /* 배경 반원(커다란 장식) */
-        .bg-semi {
-          position: absolute;
-          left: -230px;
-          top: 50%;
-          width: 520px;
-          height: 520px;
-          border-radius: 50%;
-          border: 2px solid rgba(255, 255, 255, 0.12);
-          /* 오른쪽 반원만 보이도록 마스크 */
-          -webkit-mask: linear-gradient(
-            90deg,
-            transparent 0 50%,
-            #000 50% 100%
-          );
-          mask: linear-gradient(90deg, transparent 0 50%, #000 50% 100%);
-          transform: translateY(-50%);
-          pointer-events: none;
-          filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
-        }
-
-        /* 실제 인터랙션 반원 */
         .semi-wheel {
-          position: relative;
-          width: ${R + OUT + 80}px; /* 오른쪽으로 라벨 공간 확보 */
+          position: absolute;
+          left: calc(-${R + 80}px);
+          top: 50%;
+          transform: translateY(-50%);
+          width: ${R * 2 + OUT * 2}px;
           height: ${R * 2 + OUT * 2}px;
           display: flex;
           align-items: center;
           justify-content: center;
+          z-index: 1;
+          pointer-events: none;
         }
 
-        /* 반원 링: 원을 그리고 왼쪽 절반을 마스크로 가림 */
         .semi-ring {
           position: absolute;
           width: ${R * 2}px;
           height: ${R * 2}px;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.36);
+          border: 2px solid rgba(255, 255, 255, 0.28);
           -webkit-mask: linear-gradient(
             90deg,
             transparent 0 50%,
             #000 50% 100%
           );
           mask: linear-gradient(90deg, transparent 0 50%, #000 50% 100%);
+          left: -120px;
+        }
+        .wheel-col {
+          pointer-events: none;
         }
 
-        /* 바깥쪽에 붙는 연도 라벨 */
         .year-label {
           position: absolute;
           left: 50%;
@@ -307,24 +294,23 @@ export default function LifeCardWithWheel() {
           padding: 2px 8px;
           background: transparent;
           border: 0;
-          color: #7f7f7f;
-          font-family: "Pretendard Variable", ui-sans-serif, system-ui;
-          font-size: 16px;
-          letter-spacing: 0.02em;
           cursor: pointer;
+          color: #6a6a6a;
+          font-family: "Yde street";
+          font-size: 0.9375rem;
+          font-weight: 300;
+          line-height: 130%;
           transition: color 120ms ease, transform 80ms linear;
+          pointer-events: auto;
         }
         .year-label.active {
           color: #fff;
-          font-weight: 600;
         }
-
-        /* 이벤트 패널 */
         .events {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          align-items: start;
-          column-gap: 24px;
+          display: flex;
+          flex-direction: row;
+          gap: 10px;
+          justify-self: start;
         }
         .events-year {
           font-size: 18px;
@@ -346,13 +332,18 @@ export default function LifeCardWithWheel() {
           display: flex;
           flex-direction: column;
           gap: 10px;
+          color: #fff;
+          font-family: "Yde street";
+          font-size: 0.9375rem;
+          font-style: normal;
+          font-weight: 300;
+          line-height: normal;
         }
         .ev {
-          text-align: left;
-          background: transparent;
-          border: 0;
           color: #9f9f9f;
-          padding: 0;
+          background: none;
+          border: none;
+          text-align: left;
           cursor: pointer;
         }
         .ev.on .ev-title {
@@ -388,6 +379,33 @@ export default function LifeCardWithWheel() {
           .bg-semi {
             left: 50%;
             transform: translate(-50%, -50%);
+          }
+          .events-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+          .ev {
+            text-align: left;
+            background: transparent;
+            border: 0;
+            color: #9f9f9f;
+            padding: 0;
+            cursor: pointer;
+          }
+          .ev.on .ev-title {
+            color: #fff;
+            font-weight: 700;
+          }
+          .ev-title {
+            font-size: 18px;
+            line-height: 1.2;
+          }
+          .ev-desc {
+            display: none;
           }
         }
       `}</style>

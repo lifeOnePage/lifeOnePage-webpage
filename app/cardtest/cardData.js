@@ -20,8 +20,9 @@ import {
 } from "firebase/firestore";
 
 import "./cardPage.css";
+import FloatingToolbar from "../components/FloatingToolBar";
 
-const DEFAULT_ITEMS = [
+export const DEFAULT_ITEMS = [
   {
     year: "2001",
     title: "출생",
@@ -37,6 +38,14 @@ const DEFAULT_ITEMS = [
     location: "분당 정자동",
     description:
       "창틀에 떨어진 그림자와 화분 잎맥을 따라 그리며 작은 공책을 채웠다. 사소한 변화를 적어 두면 마음이 차분해진다는 사실을 처음 배웠다.",
+  },
+  {
+    year: "2006",
+    title: "재밌는 하루",
+    date: "2006.05.10",
+    location: "분당 정자동",
+    description:
+      "사소한 변화를 적어 두면 마음이 차분해진다는 사실을 처음 배웠다.",
   },
   {
     year: "2009",
@@ -56,7 +65,7 @@ const DEFAULT_ITEMS = [
   },
 ];
 
-export default function CardData() {
+export default function CardData({ controlledEvent }) {
   const router = useRouter();
 
   const [isLoggedIn, setIsLoggedIn] = useState(true);
@@ -97,6 +106,27 @@ export default function CardData() {
       d.getMinutes()
     ).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
   };
+  useEffect(() => {
+    if (!controlledEvent) return;
+    const next = {
+      year: String(controlledEvent.year ?? selectedEvent?.year ?? ""),
+      title: controlledEvent.title ?? selectedEvent?.title ?? "",
+      date:
+        controlledEvent.date ??
+        (controlledEvent.year
+          ? `${controlledEvent.year}.01.01`
+          : selectedEvent?.date ?? ""),
+      location: controlledEvent.location ?? selectedEvent?.location ?? "",
+      description:
+        controlledEvent.description ??
+        controlledEvent.desc ??
+        selectedEvent?.description ??
+        "",
+      image: controlledEvent.image ?? selectedEvent?.image ?? image,
+    };
+    setSelectedYear(next.year);
+    setSelectedEvent(next);
+  }, [controlledEvent, isEditing]);
 
   const getDateMeta = (s) => {
     const m = s?.match(/^(\d{4})\.(\d{2})\.(\d{2})$/);
@@ -263,9 +293,10 @@ export default function CardData() {
         cardUpdatedAt: serverTimestamp(),
       });
       await saveLifestorySection(uid, { motto: "", story: bio });
-      await saveCardTimeline(uid, [], {}); // 타임라인 저장 로직 필요 시 교체
+      await saveCardTimeline(uid, [], {});
       alert("저장되었습니다.");
       setHasDraft(false);
+      setIsDirty(false);
     } finally {
       setDbSaving(false);
     }
@@ -280,6 +311,39 @@ export default function CardData() {
   const titleText = cur ? cur.title || name : name;
   const dateStr = cur ? cur.date : birth;
   const { line1, line2 } = getDateMeta(dateStr || "");
+
+  const personData = useMemo(
+    () => ({
+      name,
+      birthDate: birth,
+      birthPlace: birthplace,
+      profileImageUrl: image,
+      lifeStory: bio,
+    }),
+    [name, birth, birthplace, image, bio]
+  );
+
+  const isPreview = !isEditing;
+  const setPreview = (v) => setIsEditing(!v);
+
+  const [atTop, setAtTop] = useState(true);
+  const [atBottom, setAtBottom] = useState(false);
+  const handleScrollUp = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const handleScrollDown = () =>
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const vh = window.innerHeight;
+      const bottom = document.body.scrollHeight - vh - 10;
+      setAtTop(y <= 10);
+      setAtBottom(y >= bottom);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="body">
@@ -450,6 +514,27 @@ export default function CardData() {
             </div>
           </div>
         </section>
+      </div>
+
+      <div className="toolbar-fixed-bottom">
+        <FloatingToolbar
+          person={personData}
+          userId={auth.currentUser?.uid}
+          file={null}
+          url={image}
+          onScrollUp={handleScrollUp}
+          onScrollDown={handleScrollDown}
+          isTop={atTop}
+          isBottom={atBottom}
+          onSave={handleSaveDB}
+          onLogout={async () => {
+            await auth.signOut();
+            router.push("/");
+          }}
+          isPreview={isPreview}
+          setIsPreview={setPreview}
+          isUpdated={isDirty}
+        />
       </div>
     </div>
   );
