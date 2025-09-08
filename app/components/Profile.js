@@ -4,12 +4,14 @@ import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { FiCheckCircle, FiUpload } from "react-icons/fi";
 import { BLACK, MAIN_THEME, SUB_THEME } from "../styles/colorConfig";
+
 export default function Profile({
   person,
   onPersonChange,
   onSave,
   userId,
   isPreview,
+  setIsUpdated,
   profileHasUnsavedChanges,
   setProfileHasUnsavedChanges,
   onUrlChange,
@@ -17,24 +19,18 @@ export default function Profile({
   file,
   url,
 }) {
-  // const [
-  // , onUrlChange] = useState("/images/portrait.jpg");
   const [hovered, setHovered] = useState(false);
-  // const [file, onFileChange] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [focusedKey, setFocusedKey] = useState(null); // 'name' | 'dates' | 'birthPlace' | 'motto' | null
   const fileInputRef = useRef();
 
   useEffect(() => {
-    console.log(person);
     if (!person.profileImageUrl) return;
-
     onUrlChange(person.profileImageUrl);
   }, [person]);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -48,6 +44,7 @@ export default function Profile({
       onUrlChange(url);
     }
     setProfileHasUnsavedChanges(true);
+    setIsUpdated(true);
   };
 
   const handleSaveClick = () => {
@@ -64,6 +61,67 @@ export default function Profile({
     setProfileHasUnsavedChanges(false);
   };
 
+  // --- Helper to render contextual help text ---
+  const helpTextFor = (key) => {
+    switch (key) {
+      case "name":
+        return "이름을 입력해 주세요.\n예) 홍길동";
+      case "dates":
+        return "생년월일을 입력해 주세요.\n예) 2003.10.27\n* 고인의 기록이라면 사망일까지 함께 입력해 주세요.\n  예) 1950.01.01-2025.01.01";
+      case "birthPlace":
+        return "태어난 곳을 입력해 주세요. 원하시면 조금 자세히 적어도 좋아요.\n다만 공개 페이지이므로 너무 상세한 주소는 피해주세요.\n예) 서울 마포구 / 전남 담양";
+      case "motto":
+        return "좋아하는 문구, 가사, 가치관 등 한 문장을 적어 주세요.\n스스로를 잘 드러낼수록 좋아요.\n예) '떡볶이가 좋아', '흘러가는 물처럼 살자'";
+      default:
+        return "";
+    }
+  };
+
+  // Tooltip component shown only for the currently focused field
+  const HelpBubble = ({ activeKey, myKey }) => {
+    const show = !isPreview && activeKey === myKey;
+    return (
+      <div
+        style={{
+          position: "absolute",
+          right: 0,
+          bottom: "calc(100% + 8px)",
+          maxWidth: "min(92vw, 600px)",
+          background: "rgba(0,0,0,0.78)",
+          color: "#fff",
+          borderRadius: 10,
+          padding: "10px 12px",
+          fontSize: "0.9rem",
+          lineHeight: 1.5,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+          backdropFilter: "blur(2px)",
+          pointerEvents: "none", // don't block typing/clicks
+          opacity: show ? 1 : 0,
+          transform: show ? "translateY(0)" : "translateY(6px)",
+          transition: "opacity .18s ease, transform .18s ease",
+          whiteSpace: "pre-wrap",
+          zIndex: 20,
+        }}
+      >
+        {helpTextFor(myKey)}
+      </div>
+    );
+  };
+
+  // Common input style factory (keeps existing style)
+  const baseInputStyle = (preview) => ({
+    fontSize: "1.1rem",
+    fontWeight: 500,
+    border: "none",
+    background: "transparent",
+    color: BLACK,
+    padding: preview ? "0px" : "6px 10px",
+    borderRadius: "10px",
+    outline: preview ? "none" : "0.15rem dashed #7f1d1d33",
+    textAlign: "right",
+    width: "100%",
+  });
+
   return (
     <div
       className="profile-wrapper"
@@ -77,228 +135,39 @@ export default function Profile({
         position: "relative",
       }}
     >
-      {/* 흐릿한 배경 이미지 레이어 */}
-      {/* {
-       && (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "#fefefe",
-            backgroundImage: `url(${bgImage})`,
-            backgroundSize: "cover", // object-fit: cover
-            backgroundPosition: "center", // 원하는 포지션 (ex. 위쪽 기준 크롭)
-            filter: "blur(20px)",
-            opacity: "50%",
-            mixBlendMode: "luminosity",
-            transform: "scale(1.05)", // 블러 테두리 방지
-            zIndex: 1,
-          }}
-        />
-      )} */}
       <div style={{ zIndex: 2 }}>
-        {/* 왼쪽: 이름 (데스크탑 전용) */}
-        {/* <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {isMobile && (
-          <div style={{ width: "25vw", padding: "0rem 3rem" }}>
-            {!isPreview && (
-              <p
-                style={{
-                  fontSize: "1.25rem",
-                  color: "#7f1d1d77",
-                  width: "25vw",
-                  textAlign: "left",
-                  padding: "0rem 3rem",
-                }}
-              >
-                이름
-              </p>
-            )}
-            <input
-              type="text"
-              value={person.name}
-              readOnly={isPreview}
-              onChange={(e) =>
-                onPersonChange({ ...person, name: e.target.value })
-              }
-              style={{
-                fontSize: "2rem",
-                fontWeight: 600,
-                border: "none",
-                background: "transparent",
-                color: "#101010",
-                padding: "20px",
-                borderRadius: "10px",
-                outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-                width: "100%",
-              }}
-            />
-          </div>
-        )}
-      </div> */}
-        {/* {isMobile && (
-        <div
-          style={{
-            width: "25vw",
-            padding: "0rem 3rem",
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "flex-end",
-            flexDirection: "column",
-            textAlign: "right",
-          }}
-        >
-          {!isPreview && (
-            <p
-              style={{
-                fontSize: "1.25rem",
-                color: "#7f1d1d77",
-                width: "25vw",
-                textAlign: "right",
-              }}
-            >
-              출생일
-            </p>
-          )}
-          <input
-            type="text"
-            value={person.birthDate}
-            readOnly={isPreview}
-            onChange={(e) =>
-              onPersonChange({ ...person, birthDate: e.target.value })
-            }
-            style={{
-              textAlign: "right",
-              fontSize: "1.25rem",
-              fontWeight: 500,
-              border: "none",
-              background: "transparent",
-              color: "#101010",
-              padding: "20px",
-              borderRadius: "10px",
-              outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-              display: "block",
-              width: "100%",
-              marginBottom: "0.5rem",
-            }}
-          />
-          {!isPreview && (
-            <p
-              style={{
-                fontSize: "1.25rem",
-                color: "#7f1d1d77",
-                width: "25vw",
-                textAlign: "right",
-              }}
-            >
-              출생지
-            </p>
-          )}
-          <input
-            type="text"
-            value={person.birthPlace}
-            readOnly={isPreview}
-            onChange={(e) =>
-              onPersonChange({ ...person, birthPlace: e.target.value })
-            }
-            style={{
-              textAlign: "right",
-              fontSize: "1.25rem",
-              fontWeight: 500,
-              border: "none",
-              background: "transparent",
-              color: "#101010",
-              padding: "20px",
-              borderRadius: "10px",
-              outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-              display: "block",
-              width: "100%",
-            }}
-          />
-        </div>
-      )} */}
-
         {/* 중앙 이미지 */}
         <div
-          onMouseEnter={!isPreview ? () => setHovered(true) : undefined}
-          onMouseLeave={!isPreview ? () => setHovered(false) : undefined}
-          onClick={!isPreview ? () => fileInputRef.current.click() : undefined}
+          // onMouseEnter={!isPreview ? () => setHovered(true) : undefined}
+          // onMouseLeave={!isPreview ? () => setHovered(false) : undefined}
+          // onClick={!isPreview ? () => fileInputRef.current.click() : undefined}
           style={{
-            // width: isMobile ? "100vw" : "calc((1080 / 1920) * 100vh)",
             width: "100vw",
             maxWidth: "768px",
             height: "100vh",
             position: "relative",
             transition: "border 0.3s ease",
             overflow: "hidden",
-            cursor: isPreview ? "default" : "pointer",
-            backgroundColor: "#555555", // blending 기준 배경
+            // cursor: isPreview ? "default" : "pointer",
+            backgroundColor: "#555555",
           }}
         >
-          {/* 저장 버튼 (미리보기 모드에서는 숨김) */}
-          {/* {!isPreview &&
-            (profileHasUnsavedChanges ? (
-              <button
-                onClick={handleSaveClick}
-                style={{
-                  position: "absolute",
-                  top: "20px",
-                  right: "20px",
-                  zIndex: 10,
-                  backgroundColor: "#7f1d1d",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "10px",
-                  padding: "8px 16px",
-                  cursor: "pointer",
-                }}
-              >
-                저장
-              </button>
-            ) : (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "20px",
-                  right: "20px",
-                  zIndex: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  backgroundColor: "#00000022",
-                  borderRadius: "20px",
-                  padding: "4px 10px",
-                }}
-              >
-                <FiCheckCircle color={MAIN_THEME} />
-                <span style={{ fontSize: "0.9rem", color: "#ffffff" }}>
-                  모든 변경사항이 저장되었습니다
-                </span>
-              </div>
-            ))} */}
           <Image
+            onMouseEnter={!isPreview ? () => setHovered(true) : undefined}
+            onMouseLeave={!isPreview ? () => setHovered(false) : undefined}
             src={url}
             alt="Portrait"
             fill
             objectFit="cover"
             quality={100}
             priority
-            style={{
-              objectPosition: "50% 0%",
-              mixBlendMode: "luminosity",
-            }}
+            style={{ objectPosition: "50% 0%", mixBlendMode: "luminosity" }}
           />
 
           {hovered && !isPreview && (
             <div
+              onMouseEnter={!isPreview ? () => setHovered(true) : undefined}
+              onMouseLeave={!isPreview ? () => setHovered(false) : undefined}
               style={{
                 position: "absolute",
                 bottom: "50%",
@@ -313,10 +182,13 @@ export default function Profile({
                 fontSize: "0.9rem",
                 zIndex: 10,
                 color: "#fff",
+                cursor: isPreview ? "default" : "pointer",
               }}
+              onClick={
+                !isPreview ? () => fileInputRef.current.click() : undefined
+              }
             >
-              <FiUpload color={"#fff"} />
-              이미지 변경
+              <FiUpload color={"#fff"} /> 이미지 변경
             </div>
           )}
 
@@ -328,319 +200,191 @@ export default function Profile({
             style={{ display: "none" }}
           />
 
-          {/* 모바일용 텍스트 입력 ( 왼쪽 이름, 오른쪽 출생 버전 ) */}
-          {/* {isMobile && (
+          {/* 우측 하단 텍스트 입력 영역 */}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
               boxSizing: "border-box",
               position: "absolute",
-              top: "50%",
-              left: 0,
-              transform: "translateY(-50%)",
-              width: "100vw",
+              bottom: 0,
+              right: 0,
+              padding: "20px",
               display: "flex",
-              flexDirection: "row",
-              padding: "30px",
+              flexDirection: "column",
+              alignItems: "flex-end",
               color: BLACK,
+              width: "100%",
+              maxWidth: "100vw",
+              zIndex: 3,
+              // background:
+              //   "linear-gradient(to top, rgba(255,255,255,1.0), rgba(255,255,255,0.5))",
             }}
           >
-            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-              {!isPreview && (
-                <p
-                  style={{
-                    fontSize: "1.1rem",
-                    color: "#7f1d1d77",
-                    textAlign: "left",
-                    height: "auto",
-                  }}
-                >
-                  이름
-                </p>
-              )}
-              <div style={{ flex: 1, paddingRight: "10px" }}>
+            {/* Gradient 오버레이 */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                width: "100%",
+                height: "auto",
+
+                
+                pointerEvents: "none",
+                zIndex: 2,
+              }}
+            />
+
+            {/* 텍스트 내용 */}
+            <div
+              style={{
+                zIndex: 10,
+                width: "100%",
+                maxWidth: "100vw",
+                padding: 10,
+                borderRadius: 10,
+                backdropFilter: isPreview? "none" : "blur(100px)",
+                background: isPreview
+                  ? "none"
+                  : "linear-gradient(to top, rgba(255,255,255,0.5), rgba(255,255,255,0.0))",
+              }}
+            >
+              {/* 이름 */}
+              <div style={{ marginBottom: "8px", position: "relative" }}>
+                {!isPreview && (
+                  <p
+                    style={{
+                      fontSize: "1rem",
+                      color: "#7f1d1d77",
+                      textAlign: "right",
+                      margin: 0,
+                    }}
+                  >
+                    이름
+                  </p>
+                )}
+                <HelpBubble activeKey={focusedKey} myKey="name" />
                 <input
                   type="text"
                   value={person.name}
                   readOnly={isPreview}
-                  onChange={(e) =>
-                    onPersonChange({ ...person, name: e.target.value })
+                  onFocus={() => setFocusedKey("name")}
+                  onBlur={(e) =>
+                    setFocusedKey((k) => (k === "name" ? null : k))
                   }
+                  onChange={(e) => {
+                    setProfileHasUnsavedChanges(true);
+                    onPersonChange({ ...person, name: e.target.value });
+                  }}
                   style={{
-                    fontSize: "1.5rem",
                     fontWeight: 600,
-                    border: "none",
-                    background: "transparent",
-                    color: BLACK,
-                    padding: "20px",
-                    borderRadius: "10px",
-                    outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-                    width: "100%", // 추가
+                    ...baseInputStyle(isPreview),
+                    fontSize: "1.8rem",
+                    lineHeight: "2.5rem",
                   }}
                 />
               </div>
-            </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+
+              {/* 출생일-사망일 */}
               <div
                 style={{
-                  flex: 1,
-                  paddingLeft: "10px",
-                  display: "flex",
-                  flexDirection: "column",
+                  marginBottom: "8px",
+                  position: "relative",
+                  lineHeight: "1rem",
                 }}
               >
                 {!isPreview && (
                   <p
                     style={{
-                      fontSize: "1.1rem",
+                      fontSize: "1rem",
                       color: "#7f1d1d77",
-                      flex: 1,
                       textAlign: "right",
+                      margin: "10px",
                     }}
                   >
-                    출생일
+                    출생일-사망일
                   </p>
                 )}
+                <HelpBubble activeKey={focusedKey} myKey="dates" />
                 <input
                   type="text"
                   value={person.birthDate}
                   readOnly={isPreview}
-                  onChange={(e) =>
-                    onPersonChange({ ...person, birthDate: e.target.value })
+                  onFocus={() => setFocusedKey("dates")}
+                  onBlur={(e) =>
+                    setFocusedKey((k) => (k === "dates" ? null : k))
                   }
-                  style={{
-                    fontSize: "1.1rem",
-                    fontWeight: 500,
-                    border: "none",
-                    background: "transparent",
-                    color: BLACK,
-                    padding: "20px",
-                    borderRadius: "10px",
-                    outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-                    marginBottom: "0.5rem",
-                    textAlign: "right",
-                    width: "100%", // 추가
+                  onChange={(e) => {
+                    setProfileHasUnsavedChanges(true);
+                    onPersonChange({ ...person, birthDate: e.target.value });
                   }}
+                  style={baseInputStyle(isPreview)}
                 />
+              </div>
+
+              {/* 출생지 */}
+              <div style={{ position: "relative", marginBottom: "8px" }}>
                 {!isPreview && (
                   <p
                     style={{
-                      fontSize: "1.1rem",
+                      fontSize: "1rem",
                       color: "#7f1d1d77",
-                      flex: 1,
                       textAlign: "right",
+                      margin: "10px",
                     }}
                   >
                     출생지
                   </p>
                 )}
+                <HelpBubble activeKey={focusedKey} myKey="birthPlace" />
                 <input
                   type="text"
                   value={person.birthPlace}
                   readOnly={isPreview}
-                  onChange={(e) =>
-                    onPersonChange({ ...person, birthPlace: e.target.value })
+                  onFocus={() => setFocusedKey("birthPlace")}
+                  onBlur={(e) =>
+                    setFocusedKey((k) => (k === "birthPlace" ? null : k))
                   }
-                  style={{
-                    fontSize: "1.1rem",
-                    fontWeight: 500,
-                    border: "none",
-                    background: "transparent",
-                    color: BLACK,
-                    padding: "20px",
-                    borderRadius: "10px",
-                    outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-                    textAlign: "right",
-                    width: "100%", // 추가
+                  onChange={(e) => {
+                    setProfileHasUnsavedChanges(true);
+                    onPersonChange({ ...person, birthPlace: e.target.value });
                   }}
+                  style={baseInputStyle(isPreview)}
+                />
+              </div>
+
+              {/* 한줄소개 */}
+              <div style={{ position: "relative" }}>
+                {!isPreview && (
+                  <p
+                    style={{
+                      fontSize: "1rem",
+                      color: "#7f1d1d77",
+                      textAlign: "right",
+                      margin: "10px",
+                    }}
+                  >
+                    한줄소개
+                  </p>
+                )}
+                <HelpBubble activeKey={focusedKey} myKey="motto" />
+                <input
+                  type="text"
+                  value={person.motto}
+                  readOnly={isPreview}
+                  onFocus={() => setFocusedKey("motto")}
+                  onBlur={(e) =>
+                    setFocusedKey((k) => (k === "motto" ? null : k))
+                  }
+                  onChange={(e) => {
+                    setProfileHasUnsavedChanges(true);
+                    onPersonChange({ ...person, motto: e.target.value });
+                  }}
+                  style={{ ...baseInputStyle(isPreview), fontStyle: "italic" }}
                 />
               </div>
             </div>
           </div>
-        )} */}
-          {/* 모바일용 텍스트 입력 ( 우측 하단 정렬 버전 ) */}
-          {
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                boxSizing: "border-box",
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                color: BLACK,
-                width: "100%",
-                maxWidth: "100vw",
-                zIndex: 3,
-              }}
-            >
-              {/* Gradient 오버레이 */}
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  right: 0,
-                  width: "100%",
-                  height: "50vh",
-                  background:
-                    "linear-gradient(to top, rgba(255,255,255,0.85), rgba(255,255,255,0))",
-                  pointerEvents: "none",
-                  zIndex: 2,
-                }}
-              />
-
-              {/* 텍스트 내용 */}
-              <div style={{ zIndex: 10, width: "100%", maxWidth: "100vw",padding:10, borderRadius:10, backgroundColor:isPreview ? "#ffffff00" : "#ffffff55" }}>
-                <div style={{ marginBottom: "8px" }}>
-                  {!isPreview && (
-                    <p
-                      style={{
-                        fontSize: "1rem",
-                        color: "#7f1d1d77",
-                        textAlign: "right",
-                        margin: 0,
-                      }}
-                    >
-                      이름
-                    </p>
-                  )}
-                  <input
-                    type="text"
-                    value={person.name}
-                    readOnly={isPreview}
-                    onChange={(e) => {
-                      setProfileHasUnsavedChanges(true);
-                      onPersonChange({ ...person, name: e.target.value });
-                    }}
-                    style={{
-                      fontSize: "1.8rem",
-                      lineHeight: "2.5rem",
-                      fontWeight: 600,
-                      border: "none",
-                      background: "transparent",
-                      color: BLACK,
-                      padding: isPreview ? "0px" : "6px 10px",
-                      borderRadius: "10px",
-                      outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-                      textAlign: "right",
-                      width: "100%",
-                    }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: "8px", lineHeight: "1rem" }}>
-                  {!isPreview && (
-                    <p
-                      style={{
-                        fontSize: "1rem",
-                        color: "#7f1d1d77",
-                        textAlign: "right",
-                        margin: "10px",
-                      }}
-                    >
-                      출생일-사망일
-                    </p>
-                  )}
-                  <input
-                    type="text"
-                    value={person.birthDate}
-                    readOnly={isPreview}
-                    onChange={(e) => {
-                      setProfileHasUnsavedChanges(true);
-                      onPersonChange({ ...person, birthDate: e.target.value });
-                    }}
-                    style={{
-                      fontSize: "1.1rem",
-                      fontWeight: 500,
-                      border: "none",
-                      background: "transparent",
-                      color: BLACK,
-                      padding: isPreview ? "0px" : "6px 10px",
-                      borderRadius: "10px",
-                      outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-                      textAlign: "right",
-                      width: "100%",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  {!isPreview && (
-                    <p
-                      style={{
-                        fontSize: "1rem",
-                        color: "#7f1d1d77",
-                        textAlign: "right",
-                        margin: "10px",
-                      }}
-                    >
-                      출생지
-                    </p>
-                  )}
-                  <input
-                    type="text"
-                    value={person.birthPlace}
-                    readOnly={isPreview}
-                    onChange={(e) => {
-                      setProfileHasUnsavedChanges(true);
-                      onPersonChange({ ...person, birthPlace: e.target.value });
-                    }}
-                    style={{
-                      fontSize: "1.1rem",
-                      fontWeight: 500,
-                      border: "none",
-                      background: "transparent",
-                      color: BLACK,
-                      padding: isPreview ? "0px" : "6px 10px",
-                      borderRadius: "10px",
-                      outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-                      textAlign: "right",
-                      width: "100%",
-                    }}
-                  />
-                </div>
-                <div>
-                  {!isPreview && (
-                    <p
-                      style={{
-                        fontSize: "1rem",
-                        color: "#7f1d1d77",
-                        textAlign: "right",
-                        margin: "10px",
-                      }}
-                    >
-                      한줄소개
-                    </p>
-                  )}
-                  <input
-                    type="text"
-                    value={person.motto}
-                    readOnly={isPreview}
-                    onChange={(e) => {
-                      setProfileHasUnsavedChanges(true);
-                      onPersonChange({ ...person, motto: e.target.value });
-                    }}
-                    style={{
-                      fontSize: "1.1rem",
-                      fontWeight: 500,
-                      fontStyle: "italic",
-                      border: "none",
-                      background: "transparent",
-                      color: BLACK,
-                      padding: isPreview ? "0px" : "6px 10px",
-                      borderRadius: "10px",
-                      outline: isPreview ? "none" : "0.15rem dashed #7f1d1d33",
-                      textAlign: "right",
-                      width: "100%",
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          }
         </div>
       </div>
     </div>

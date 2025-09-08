@@ -59,11 +59,28 @@ export async function saveUsername(uid, name) {
       success: true,
       message: "사용자 이름이 성공적으로 저장되었습니다.",
     };
-
   } catch (error) {
     console.error("사용자 이름 저장 중 오류 발생:", error);
     return { success: false, message: "이름 저장에 실패했습니다." };
   }
+}
+
+export async function checkValidIdUnique(name) {
+  // 1. **입력값 유효성 검사 (Validate Inputs)**
+  if (!name) {
+    return false;
+  }
+  const usersCol = collection(db, "users");
+  const q = query(usersCol, where("username", "==", name));
+
+  // 2. **사용자 이름 중복 확인 (Check for Duplicate Username)**
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    // 동일한 사용자 이름을 가진 문서가 이미 존재하는 경우
+    return false;
+  }
+  return true;
 }
 
 /**
