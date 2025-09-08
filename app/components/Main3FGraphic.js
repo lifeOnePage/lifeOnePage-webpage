@@ -468,7 +468,7 @@ function Main3FGraphic({ onPreviewRequest, initialData, setTrigger }) {
         // initial={false}
         animate={mode}
       >
-        {/* AboutLines (좌측 영역에 고정 배치: 예전처럼 380px 컬럼 중앙 정렬) */}
+        AboutLines (좌측 영역에 고정 배치: 예전처럼 380px 컬럼 중앙 정렬)
         <motion.div
           style={{
             position: "absolute",
@@ -481,7 +481,7 @@ function Main3FGraphic({ onPreviewRequest, initialData, setTrigger }) {
           }}
           variants={aboutVariants}
         >
-          <AboutLines />
+          {/* <AboutLines /> */}
         </motion.div>
 
         {/* 3D Canvas (화면 전체에 깔고, variants로 x만 미세 이동) */}

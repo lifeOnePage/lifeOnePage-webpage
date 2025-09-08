@@ -66,7 +66,7 @@ export default function FloatingToolbar({
   const onClickMypage = () => {
     if (isUpdated) alert("저장되지 않은 변경사항이 있습니다.");
     else {
-      router.push(`/`);
+      router.push(`/mypage`);
     }
   };
   return (

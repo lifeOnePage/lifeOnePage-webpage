@@ -53,5 +53,6 @@ export default function ViewOrEditPage() {
       <div style={{ textAlign: "center", padding: "40px" }}>불러오는 중...</div>
     );
   }
+  console.log(isMe)
   return <MemorialPage uid={viewUid} initialData={viewData} isMe={isMe} />;
 }
