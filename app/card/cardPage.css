@@ -161,6 +161,7 @@ body,
   letter-spacing: -0.05rem;
 
   margin-top: 0.8rem;
+  height: 7rem;
 }
 
 .lr-meta {
@@ -174,11 +175,12 @@ body,
 
 .lr-name {
   font-family: "Helvetica Neue LT Std";
-  font-size: 2.5rem;
+  font-size: 2.3rem;
   font-style: normal;
   font-weight: 400;
-  line-height: normal;
+  line-height: 110%;
   letter-spacing: -0.25rem;
+  white-space: pre-line;
 }
 
 .lr-date {
@@ -187,7 +189,7 @@ body,
   font-size: 2.3rem;
   font-style: normal;
   font-weight: 300;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: -0.125rem;
 }
 
@@ -221,7 +223,6 @@ body,
   top: 50%;
   left: -120%;
   transform: translateY(-50%);
-  pointer-events: none;
   z-index: 1;
 }
 
@@ -236,21 +237,37 @@ body,
 
 .year-item {
   position: absolute;
-  font-size: 16px;
-  color: #aaa;
-  transition: color 0.3s ease, transform 0.3s ease;
+  color: #a6a6a6;
+  white-space: nowrap;
+  transform-origin: 0 0;
+  transition: color 0.25s ease, transform 0.25s ease;
+
+  font-family: "Yde street";
+  font-size: 1.25rem;
+  font-style: normal;
+  font-weight: 100;
+  line-height: 130%;
 }
 
 .year-item.active {
+  color: #f2f2f2;
+  font-size: 1.25rem;
+}
+
+.year-event {
+  margin-left: 1rem;
+  font-size: 1.2rem;
+}
+
+.year-item.active .year-event {
   color: #fff;
-  font-weight: bold;
-  font-size: 18px;
 }
 
 .lp-disc {
   transition: transform 160ms ease-out;
   display: block;
   will-change: transform;
+  pointer-events: none;
 }
 
 /* 타블렛 가로 */
@@ -277,7 +294,6 @@ body,
 @media (max-width: 600px) {
   .lr-grid {
     grid-template-columns: 1fr;
-    gap: 28px;
   }
   .lr-left {
     order: 1;
@@ -307,4 +323,22 @@ body,
   .lr-sub {
     text-align: center;
   }
+}
+
+.lp-wrap {
+  position: absolute;
+  top: 50%;
+  left: -120%;
+  transform: translateY(-50%);
+  z-index: 1;
+  cursor: pointer;
+}
+
+.year-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translate(-50%, -50%);
 }
