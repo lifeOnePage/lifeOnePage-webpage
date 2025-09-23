@@ -28,15 +28,18 @@ body,
   overflow: hidden;
   display: grid;
   place-items: center;
-  padding: 48px 28px;
+  padding: 0px 28px;
 }
 
 .lr-grid {
   width: min(1250px, 95vw);
+  height: 95vh;
   display: grid;
   grid-template-columns: 1fr minmax(300px, 450px) 1fr;
   align-items: center;
   position: relative;
+
+  margin-top: 1rem;
 }
 
 .lr-left {
@@ -247,6 +250,8 @@ body,
   font-style: normal;
   font-weight: 100;
   line-height: 130%;
+
+  text-align: center;
 }
 
 .year-item.active {
@@ -268,6 +273,99 @@ body,
   display: block;
   will-change: transform;
   pointer-events: none;
+}
+
+.lp-wrap {
+  position: absolute;
+  top: 50%;
+  left: -120%;
+  transform: translateY(-50%);
+  z-index: 1;
+  cursor: pointer;
+}
+
+.year-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translate(-50%, -50%);
+}
+.lr-right {
+  touch-action: pan-y;
+}
+
+.lr-header {
+  position: fixed;
+  top: 16px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  padding-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #aaa;
+  z-index: 1000;
+  background: #121212;
+
+  border-bottom: 1px solid #303030;
+}
+
+.lr-header-left {
+  text-align: left;
+
+  color: #aaa;
+  font-family: "Cormorant Garamond";
+  font-size: 1.5rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 100%;
+}
+.lr-header-right {
+  text-align: right;
+  cursor: pointer;
+}
+.lr-header-right:hover {
+  text-decoration: underline;
+}
+
+.card-fade .lr-card-desc {
+  animation: contentIn 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both 40ms; /* 약간 지연 */
+}
+
+@keyframes contentIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.login-btn-fixed {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  color: #a6a6a6;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-family: "Pretendard Variable";
+  cursor: pointer;
+  font-style: normal;
+  font-weight: 300;
+  line-height: 130%;
+
+  z-index: 1000;
+}
+
+.login-btn-fixed:hover {
+  text-decoration: underline;
 }
 
 /* 타블렛 가로 */
@@ -292,9 +390,19 @@ body,
 
 /* 모바일 세로 */
 @media (max-width: 600px) {
+  .lr-page {
+    padding: 4rem 2rem;
+    overflow: auto;
+    overflow-x: hidden;
+    overflow: hidden;
+  }
+
   .lr-grid {
     grid-template-columns: 1fr;
+    width: 100%;
+    gap: 35px;
   }
+
   .lr-left {
     order: 1;
   }
@@ -303,42 +411,247 @@ body,
   }
   .lr-right {
     order: 3;
-    min-height: 360px;
+    min-height: auto;
+    display: block;
   }
-  .lp-wrap {
-    position: relative;
-    left: 0;
-    transform: none;
-    margin-top: 12px;
-  }
-  .year-nav {
-    position: relative;
-    bottom: auto;
-    right: auto;
-    margin-top: 8px;
-  }
+
   .lr-title {
-    text-align: center;
+    text-align: left;
+    font-size: 2.8rem;
+    margin-bottom: 1rem;
   }
   .lr-sub {
-    text-align: center;
+    margin-top: 0;
+    text-align: left;
+    font-size: 0.75rem;
+  }
+
+  /* center : 카드 부분 */
+
+  .lr-card {
+    padding: 16px;
+    border-radius: 0.25rem;
+  }
+  .lr-card-media {
+    height: auto;
+    margin-bottom: 10px;
+  }
+  .lr-cover {
+    height: 220px;
+    border-radius: 0.25rem;
+  }
+
+  .lr-playlist h4 {
+    font-size: 0.8rem;
+  }
+  .lr-playlist ol {
+    font-size: 0.6rem;
+  }
+
+  .lr-card-desc p {
+    height: 4.5rem;
+    font-size: 0.8rem;
+  }
+
+  .lr-name {
+    font-size: 2rem;
+    letter-spacing: -0.15rem;
+  }
+  .lr-date {
+    font-size: 1.6rem;
+    letter-spacing: -0.06rem;
+  }
+
+  /*============= bottom : LP판 부분 =============*/
+
+  .lp-wrap {
+    position: relative;
+    width: min(82vw, 400px);
+    top: auto;
+    left: 5%;
+    transform: translateY(-40%);
+    cursor: default;
+  }
+
+  .lp-disc {
+    width: min(80vw, 400px);
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    transition: transform 220ms ease-out;
+  }
+
+  .year-item {
+    font-size: 0.95rem;
+  }
+  .year-item.active {
+    font-size: 1rem;
+  }
+  .year-event {
+    margin-left: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .lr-right {
+    order: 3;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding-bottom: 24px;
+    position: relative;
+  }
+
+  .lp-wrap {
+    position: relative;
+    aspect-ratio: 1/1;
+    margin: 0 auto;
+    left: auto;
+    top: auto;
+    transform: translateY(-70%);
+  }
+  .lp-disc {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 130%;
+    height: 100%;
+    transition: transform 220ms ease-out;
+    pointer-events: none;
+    transform: scale(2);
+  }
+  .year-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+  }
+
+  .year-item {
+    position: absolute;
+    transform-origin: 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.95rem;
+    color: #bdbdbd;
+    cursor: pointer;
+  }
+  .year-item.active {
+    color: #fff;
+    font-size: 1rem;
+  }
+  .year-item .year-event {
+    display: none;
+  }
+  .year-item.active .year-event {
+    display: block;
+    margin-top: 6px;
+  }
+
+  .lr-page[data-editing="true"] {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 }
 
-.lp-wrap {
-  position: absolute;
-  top: 50%;
-  left: -120%;
-  transform: translateY(-50%);
-  z-index: 1;
-  cursor: pointer;
+/* 편집 모드 표시(연한 테두리) */
+.lr-card--editing {
+  outline: 2px dashed #c9c9c9;
+  outline-offset: 6px;
 }
 
-.year-circle {
+/* 이미지 변경 버튼 */
+.edit-image-btn {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  transform: translate(-50%, -50%);
+  top: 12px;
+  right: 12px;
+  background: rgba(18, 18, 18, 0.75);
+  color: #f2f2f2;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 양식 레이아웃 */
+.edit-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.edit-row {
+  display: grid;
+  gap: 6px;
+}
+.edit-row > label {
+  font-size: 12px;
+  color: #666;
+}
+.edit-row input[type="text"],
+.edit-row input[type="date"],
+.edit-row textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+  color: #111;
+}
+
+/* 액션 버튼 */
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.btn-primary,
+.btn-secondary {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+.btn-primary {
+  background: #111;
+  color: #f2f2f2;
+}
+.btn-secondary {
+  background: #eee;
+  color: #111;
+}
+
+.edit-date-location {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+.desc-field {
+  position: relative;
+}
+
+/* 카운터가 들어갈 공간 확보 */
+.desc-field textarea {
+  padding-bottom: 28px;
+}
+
+/* 우측 하단 카운터 */
+.char-count {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font-size: 12px;
+  color: #9a9a9a;
+  user-select: none;
+}
+
+/* 140자 이상 경고 색상 */
+.char-count.warn {
+  color: #ff9e63;
 }
