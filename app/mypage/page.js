@@ -609,12 +609,12 @@ function SelectItem({ router, initialData, selected, setSelected }) {
           </h2>
           <p>
             {type === "card"
-              ? initialData.cardUpdatedAt
+              ? initialData?.cardUpdatedAt
                 ? `최근 수정일 ${formatDate(
                     initialData.cardUpdatedAt?.toDate()
                   )} `
                 : "아직 비어있어요"
-              : initialData.pageUpdatedAt
+              : initialData?.pageUpdatedAt
               ? `최근 수정일 ${formatDate(initialData.pageUpdatedAt?.toDate())}`
               : "아직 비어있어요"}
           </p>
