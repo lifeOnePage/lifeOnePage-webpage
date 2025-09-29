@@ -302,7 +302,7 @@ export default function Profile({
                       margin: "10px",
                     }}
                   >
-                    출생일-사망일
+                    출생일
                   </p>
                 )}
                 <HelpBubble activeKey={focusedKey} myKey="dates" />

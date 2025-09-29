@@ -23,7 +23,7 @@ import {
   IoIosLogOut,
   IoMdCheckmarkCircleOutline,
 } from "react-icons/io";
-import { MdOutlineManageAccounts } from "react-icons/md";
+import { MdOutlineManageAccounts, MdPerson } from "react-icons/md";
 import { useRouter } from "next/navigation";
 
 export default function FloatingToolbar({
@@ -138,7 +138,7 @@ export default function FloatingToolbar({
                 {
                   key: "mypage",
                   onClick: onClickMypage,
-                  icon: <MdOutlineManageAccounts size={20} />,
+                  icon: <MdPerson size={20} />,
                   disabled: isUpdated,
                 },
                 {
