@@ -1,414 +1,542 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import CardData, { DEFAULT_ITEMS } from "./cardData.js";
+import React, { useState, useRef, useEffect } from "react";
+import "./cardPage.css";
+import FloatingToolbar from "../components/FloatingToolBar-Card";
 
-export default function LifeCardWithWheel() {
-  const data = useMemo(() => {
-    const map = new Map();
-    DEFAULT_ITEMS.forEach((it) => {
-      const y = Number(it.year);
-      if (!map.has(y)) map.set(y, []);
-      map.get(y).push(it);
-    });
-    return Array.from(map.entries())
-      .sort((a, b) => a[0] - b[0])
-      .map(([year, events]) => ({ year, events }));
-  }, []);
-  const years = useMemo(() => data.map((d) => d.year), [data]);
+//초기 지정 변수 모음 (타임라인, 달, 팔레트색상)
 
+const INITIAL_TIMELINE = [
+  {
+    id: "PLAY",
+    kind: "main",
+    label: "PLAY",
+    title: "최아텍의 이야기",
+    date: "2001.11.12",
+    location: "서울 마포구",
+    desc: "도시의 작은 변화를 관찰하며 기록하는 인터랙티브 미디어 아티스트이다. 일상의 경험을 데이터와 이야기로 엮어 사람들이 스스로의 시간을 아카이브하도록 돕는다. 걷기와 사진을 좋아하며, 따뜻한 연결을 만드는 작품을 목표로 한다.",
+    cover: "/images/timeline/1.jpeg",
+  },
+  {
+    id: 2001,
+    kind: "year",
+    label: "2001",
+    event: "출생",
+    date: "2001.11.12",
+    location: "서울 마포구",
+    cover: "/images/timeline/2.jpeg",
+    desc: "세상에 첫 발을 디딘 날. 가족들의 축복 속에서 태어났다. 작은 울음소리가 집안을 가득 채우자, 부모님과 가족들은 새로운 생명의 도착을 기뻐하며 서로의 손을 꼭 잡았다.",
+  },
+  {
+    id: 2008,
+    kind: "year",
+    label: "2008",
+    event: "햇살 가득한 \n첫 소풍의 기억",
+    date: "2008.05.12",
+    location: "어린이대공원",
+    cover: "/images/timeline/3.jpeg",
+    desc: "초등학교 입학 후 처음으로 떠난 소풍이었다. 친구들과 함께 김밥을 나누어 먹고, 놀이기구를 타며 웃음소리가 끊이지 않았다.",
+  },
+  {
+    id: 2011,
+    kind: "year",
+    label: "2011",
+    event: "새로운 시작",
+    date: "2011.03.02",
+    location: "서울",
+    cover: "/images/timeline/4.jpeg",
+    desc: "새로운 교실, 새로운 친구들. 기대와 설렘 속에서 중학교 생활을 시작했다.",
+  },
+];
+const MONTHS = [
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
+];
+const BG_THEME_PALETTE = [
+  { name: "Coal", bg: "#121212", text: "#F2F2F2" },
+  { name: "Rose", bg: "#aa747dff", text: "#ffffffff" },
+  { name: "Olive", bg: "#7B7341", text: "#f2f2f2ff" },
+  { name: "Warm Gray", bg: "#746F6F", text: "#F2F2F2" },
+  { name: "Blue", bg: "#6C8E98", text: "#F2F2F2" },
+  { name: "BlackPink", bg: "#121212ff", text: "#aa747dff" },
+  { name: "Parchment", bg: "#F5F1E6", text: "#111111" },
+  { name: "Cloud", bg: "#ECECEC", text: "#111111" },
+];
+
+//년도분리
+const toMonthDay = (str) => {
+  if (!str) return "";
+  const [y, m, d] = str.split(".").map((s) => parseInt(s, 10));
+  return `${MONTHS[m - 1]} ${String(d).padStart(2, "0")}`;
+};
+const yyyymmddToISO = (str) => {
+  if (!str) return "";
+  const [y, m, d] = str.split(".").map((s) => s.padStart(2, "0"));
+  return `${y}-${m}-${d}`;
+};
+const isoToYyyymmdd = (iso) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${y}.${m}.${d}`;
+};
+const getYear = (str) => {
+  if (!str) return "";
+  const [y] = str.split(".");
+  return y + " " || "";
+};
+
+export default function LifeRecord() {
+  const [timeline, setTimeline] = useState(INITIAL_TIMELINE);
   const [rotation, setRotation] = useState(0);
-  const [activeYear, setActiveYear] = useState(years[0]);
-  const [activeEventIdx, setActiveEventIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
+  const [isUpdated, setIsUpdated] = useState(false);
 
-  const R = 250;
-  const OUT = -30;
-  const targetDeg = 0;
+  const [addOpen, setAddOpen] = useState(false);
+  const DEFAULT_THEME = BG_THEME_PALETTE[0];
+  const [theme, setTheme] = useState(DEFAULT_THEME);
 
-  const dragging = useRef(false);
-  const lastY = useRef(0);
+  // LP 휠 회전
+  const START_ANGLE = 0;
+  const SWEEP_ANGLE = 100; //mobile:160
+  const RADIUS = 280; //mobile:120
+  const STEP = 3;
+  const wheelTimer = useRef(null);
+  const scrollSound = useRef(null);
+  const touchStartX = useRef(0);
+  const touchMoveX = useRef(0);
 
-  const onWheel = (e) => setRotation((p) => p + e.deltaY * 0.18);
-  const onPointerDown = (e) => {
-    dragging.current = true;
-    lastY.current = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
   };
-  const onPointerMove = (e) => {
-    if (!dragging.current) return;
-    const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
-    const dy = y - lastY.current;
-    lastY.current = y;
-    setRotation((p) => p + dy * 0.7);
-  };
-  const onPointerUp = () => (dragging.current = false);
 
-  useEffect(() => {
-    const step = 180 / years.length;
-    let best = years[0];
-    let bestDist = Infinity;
-    for (let i = 0; i < years.length; i++) {
-      const a = -90 + i * step + rotation;
-      let d = Math.abs((((a - targetDeg) % 360) + 360) % 360);
-      d = Math.min(d, 360 - d);
-      if (d < bestDist) {
-        bestDist = d;
-        best = years[i];
-      }
+  const handleTouchMove = (e) => {
+    touchMoveX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diffX = touchMoveX.current - touchStartX.current;
+    if (Math.abs(diffX) < 20) return;
+
+    const dir = diffX > 0 ? -1 : 1;
+    const next = rotation + dir * STEP * 10;
+    setRotation(next);
+
+    if (scrollSound.current) {
+      scrollSound.current.currentTime = 0;
+      scrollSound.current.play();
     }
-    setActiveYear(best);
-    setActiveEventIdx(0);
-  }, [rotation, years]);
+
+    if (wheelTimer.current) clearTimeout(wheelTimer.current);
+    wheelTimer.current = setTimeout(() => snapToClosest(next), 150);
+  };
 
   useEffect(() => {
-    const pills = Array.from(document.querySelectorAll(".tl-pill"));
-    const btn = pills.find((el) =>
-      (el.textContent || "").includes(String(activeYear))
-    );
-    if (btn && !btn.classList.contains("active")) btn.click();
-  }, [activeYear]);
+    scrollSound.current = new Audio("/sounds/scroll.m4a");
+  }, []);
 
-  const activeYearData = data.find((d) => d.year === activeYear) || data[0];
-  const eventsOfYear = activeYearData?.events ?? [];
-  const activeEvent = eventsOfYear[activeEventIdx] || null;
+  const angleForIndex = (i) => {
+    const t = timeline.length === 1 ? 0 : i / (timeline.length - 1);
+    return START_ANGLE + SWEEP_ANGLE * t;
+  };
 
-  const controlledEvent = useMemo(() => {
-    if (!activeEvent) return null;
-    return {
-      year: Number(activeEvent.year),
-      title: activeEvent.title ?? "",
-      description: activeEvent.description ?? "",
-      date: activeEvent.date ?? `${activeYear}.01.01`,
-      location: activeEvent.location ?? "",
-      image: activeEvent.image ?? "/images/timeline/beach_image.jpg",
-    };
-  }, [activeEvent, activeYear]);
+  const snapToClosest = (rot, anchor = getAnchor()) => {
+    let best = 0,
+      bestDiff = Infinity,
+      snapped = rot;
+    timeline.forEach((_, i) => {
+      const base = angleForIndex(i); // i번째 기준각
+      const cur = norm360(base + rot); // 현재 화면상의 각
+      const diff = angDist(cur, anchor); // 앵커와의 거리
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = i;
+        // cur을 anchor로 정렬되게 rotation 보정
+        snapped = rot + (anchor - cur);
+      }
+    });
+    setRotation(snapped);
+    setActiveIdx(best);
+  };
+
+  const handleWheel = (e) => {
+    const dir = e.deltaY > 0 ? -1 : 1;
+    const next = rotation + dir * STEP;
+    setRotation(next);
+    if (scrollSound.current) {
+      scrollSound.current.currentTime = 0;
+      scrollSound.current.play();
+    }
+    if (wheelTimer.current) clearTimeout(wheelTimer.current);
+    wheelTimer.current = setTimeout(() => snapToClosest(next), 140);
+  };
+
+  const activeItem = timeline[activeIdx];
+
+  const setField = (field, value) => {
+    setTimeline((prev) => {
+      const next = [...prev];
+      const item = { ...next[activeIdx] };
+
+      if (field === "title") {
+        if (item.kind === "year") item.event = value;
+        else item.title = value;
+      } else if (field === "image") {
+        item.cover = value;
+        item.isImageUpdated = true;
+      } else if (field === "date") {
+        item.date = value;
+      } else {
+        item[field] = value;
+      }
+
+      next[activeIdx] = item;
+      return next;
+    });
+    setIsUpdated(true);
+  };
+
+  const handleImageChange = (file) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (file.type?.startsWith("video/")) {
+      setField("video", url);
+    } else {
+      setField("image", url);
+    }
+    setIsUpdated(true);
+  };
+
+  const handleSave = () => {};
+  const handleCancel = () => {
+    setTimeline(INITIAL_TIMELINE);
+    setIsEditing(false);
+    setIsUpdated(true);
+  };
+  const handleTogglePreview = () => setIsPreview((p) => !p);
+  const showEditUI = isEditing && !isPreview;
+
+  //LP 모바일 버전
+  const norm360 = (a) => ((a % 360) + 360) % 360;
+  const angDist = (a, b) => {
+    const d = Math.abs(norm360(a) - norm360(b));
+    return Math.min(d, 360 - d);
+  };
+  const useIsMobile = () => {
+    const [m, setM] = React.useState(false);
+    useEffect(() => {
+      const mq = window.matchMedia("(max-width: 768px)");
+      const onChange = () => setM(mq.matches);
+      onChange();
+      mq.addEventListener?.("change", onChange);
+      return () => mq.removeEventListener?.("change", onChange);
+    }, []);
+    return m;
+  };
+  const isMobile = useIsMobile();
+  const getAnchor = () => (isMobile ? 90 : 0); //모바일이면-> 남쪽(90)기준, 데탑이면-> 오른쪽(0) 기준
+
   return (
-    <div className="wrap">
-      <header className="hero">
-        <h1 className="hero-title">Life-Card</h1>
-        <p className="hero-desc">
-          <strong>이서하</strong>님의 포스트 카드입니다.
-          <br />
-          “작은 장면을 모아 긴 기억을 만듭니다”
-        </p>
-      </header>
+    <main
+      className="lr-page"
+      data-editing={isEditing ? "true" : "false"}
+      style={{ ["--bg"]: theme.bg, ["--text"]: theme.text }}
+    >
+      <div className="lr-grid">
+        <section className="lr-left">
+          <h1 className="lr-title">Life- Record</h1>
+          <p className="lr-sub">
+            <b>최아텍</b>님의 라이프 레코드입니다.
+            <br />
+            “작은 장면을 모아 긴 기억을 만듭니다”
+          </p>
+          {/* ===== 편집 모드에서만 노출: 배경 색상 패널 ===== */}
+          {isEditing && (
+            <div className="bg-panel">
+              <div className="bg-panel-head">
+                <span className="bg-panel-title">배경 테마</span>
+                <span className="bg-panel-hint">클릭 즉시 적용</span>
+              </div>
 
-      <main className="stage">
-        <section className="card-area">
-          <CardData controlledEvent={controlledEvent} />
+              <div className="bg-swatches">
+                {BG_THEME_PALETTE.map((t) => {
+                  const active = theme.bg === t.bg && theme.text === t.text;
+                  return (
+                    <button
+                      key={t.name}
+                      type="button"
+                      className={`swatch ${active ? "is-active" : ""}`}
+                      style={{ background: t.bg, color: t.text }}
+                      title={`${t.name} (${t.bg})`}
+                      onClick={() => setTheme(t)}
+                    >
+                      A
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="lr-center">
+          <article className={`lr-card ${isEditing ? "lr-card--editing" : ""}`}>
+            <div key={activeIdx} className="card-fade">
+              <div className="lr-card-media">
+                {activeItem.video ? (
+                  <video
+                    className="lr-cover"
+                    src={activeItem.video}
+                    controls
+                    playsInline
+                    muted
+                    autoPlay
+                    loop
+                  />
+                ) : (
+                  <img
+                    src={
+                      activeItem.kind === "year"
+                        ? activeItem.cover ?? "/images/timeline/1.jpeg"
+                        : activeItem.cover ?? "/images/timeline/1.jpeg"
+                    }
+                    alt="cover"
+                    className="lr-cover"
+                  />
+                )}
+                {activeItem.kind === "main" && (
+                  <div className="lr-playlist">
+                    <h4>PLAYLIST</h4>
+                    <div className="lr-playlist-contents">
+                      <ol>
+                        <li>01 햇살 가득한 첫 소풍의 기억</li>
+                        <li>02 설렘으로 시작한 새로운 여정</li>
+                        <li>03 봄비 아래의 첫 해외 모험</li>
+                      </ol>
+                      <ol>
+                        <li>04 다시 만난 작은 소풍의 기억</li>
+                        <li>05 생활로 스며든 새로운 여정</li>
+                        <li>06 별빛 아래의 첫 해외 모험</li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
+
+                {/* ===== 이미지 업로드 (편집 모드에서만 보임) ===== */}
+                {isEditing && (
+                  <label className="edit-image-btn">
+                    이미지 변경
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={(e) => handleImageChange(e.target.files?.[0])}
+                      hidden
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* ===== 설명/메타 + 편집 폼 ===== */}
+              <div className="lr-card-desc">
+                {!isEditing ? (
+                  <>
+                    <p>{activeItem.desc}</p>
+                    <div className="lr-meta">
+                      <div className="lr-name">
+                        {activeItem.kind === "year"
+                          ? activeItem.event
+                          : "최아텍"}
+                      </div>
+                      <div className="lr-date">
+                        {/* <div className="lr-date-year">
+                          {getYear(activeItem.date)}
+                        </div> */}
+                        <div>
+                          {getYear(activeItem.date)}
+                          {toMonthDay(activeItem.date)}
+                        </div>
+                        <div>{activeItem.location}</div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <form
+                    className="edit-form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSave();
+                    }}
+                  >
+                    <div className="edit-row">
+                      <label>Title</label>
+                      <input
+                        type="text"
+                        value={
+                          activeItem.kind === "year"
+                            ? activeItem.event ?? ""
+                            : activeItem.title ?? ""
+                        }
+                        onChange={(e) => setField("title", e.target.value)}
+                        placeholder={
+                          activeItem.kind === "year" ? "이벤트명" : "제목"
+                        }
+                      />
+                    </div>
+                    <div className="edit-date-location">
+                      <div className="edit-row">
+                        <label>Date</label>
+                        <input
+                          type="date"
+                          value={yyyymmddToISO(activeItem.date || "")}
+                          onChange={(e) =>
+                            setField("date", isoToYyyymmdd(e.target.value))
+                          }
+                        />
+                      </div>
+
+                      <div className="edit-row">
+                        <label>Location</label>
+                        <input
+                          type="text"
+                          value={activeItem.location ?? ""}
+                          onChange={(e) => setField("location", e.target.value)}
+                          placeholder="장소"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="edit-row">
+                      <label>Description</label>
+                      <textarea
+                        rows={6}
+                        maxLength={150}
+                        value={activeItem.desc ?? ""}
+                        onChange={(e) => setField("desc", e.target.value)}
+                        placeholder="설명(최대 150자)"
+                      />
+                      <span
+                        className={`char-count ${
+                          (activeItem.desc?.length ?? 0) >= 140 ? "warn" : ""
+                        }`}
+                        aria-live="polite"
+                      >
+                        {activeItem.desc?.length ?? 0}/150
+                      </span>
+                    </div>
+                    {/* 
+                    <div className="edit-actions">
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={handleCancel}
+                      >
+                        취소
+                      </button>
+                      <button type="submit" className="btn-primary">
+                        저장
+                      </button>
+                    </div> */}
+                  </form>
+                )}
+              </div>
+            </div>
+          </article>
         </section>
 
         <aside
-          className="right-pane"
-          onWheel={onWheel}
-          onMouseDown={onPointerDown}
-          onMouseMove={onPointerMove}
-          onMouseUp={onPointerUp}
-          onMouseLeave={onPointerUp}
-          onTouchStart={onPointerDown}
-          onTouchMove={onPointerMove}
-          onTouchEnd={onPointerUp}
+          className="lr-right"
+          onWheel={handleWheel}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
-          <div className="semi-wheel" role="group" aria-label="Life wheel">
-            <div className="semi-ring" />
-            {years.map((y, i) => {
-              const step = 180 / years.length;
-              const angle = -90 + i * step + rotation; // -90~+90
-              const rad = (angle * Math.PI) / 180;
-              const x = (R + OUT) * Math.cos(rad);
-              const yPos = (R + OUT) * Math.sin(rad);
-              const isActive = y === activeYear;
-              return (
-                <button
-                  key={y}
-                  className={`year-label ${isActive ? "active" : ""}`}
-                  style={{ transform: `translate(${x}px, ${yPos}px)` }}
-                  onClick={() => setActiveYear(y)}
-                >
-                  {y}
-                </button>
-              );
-            })}
-          </div>
-          <div className="wheel-col" aria-hidden="true" />
-          <div className="events">
-            <div className="events-rule" />
-            <ul className="events-list">
-              {eventsOfYear.map((ev, idx) => (
-                <li key={idx}>
-                  <button
-                    className={`ev ${idx === activeEventIdx ? "on" : ""}`}
-                    onClick={() => setActiveEventIdx(idx)}
+          <div className="lp-wrap">
+            <img
+              className="lp-disc"
+              src="/images/LP-image.png"
+              alt="LP"
+              style={{ transform: `rotate(${rotation}deg)` }}
+            />
+            <div className="year-circle">
+              {timeline.map((item, i) => {
+                const current = angleForIndex(i) + rotation;
+                const handleClick = () => {
+                  const base = angleForIndex(i);
+                  const cur = norm360(base + rotation);
+                  const anchor = getAnchor();
+                  const snapped = rotation + (anchor - cur);
+                  setRotation(snapped);
+                  setActiveIdx(i);
+                  if (scrollSound.current) {
+                    scrollSound.current.currentTime = 0;
+                    scrollSound.current.play();
+                  }
+                };
+                return (
+                  <span
+                    key={item.id}
+                    className={`year-item ${i === activeIdx ? "active" : ""}`}
+                    style={{
+                      transform: `rotate(${current}deg) translate(${RADIUS}px) rotate(${-current}deg)`,
+                    }}
+                    onClick={handleClick}
                   >
-                    <div className="ev-title">{ev.title}</div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
-      </main>
-
-      {/* <div className="buttons buttons-row">
-        <button onClick={toggleEditPreview} className="btn-preview btn-large">
-          {isEditing ? "미리보기" : "편집하기"}
-        </button>
-
-        {isEditing && (
-          <div className="btn-stack">
-            <button
-              onClick={handleSaveDB}
-              className="btn-edit btn-large"
-              disabled={!hasDraft || dbSaving}
-            >
-              저장
-            </button>
-            <div
-              className={`save-hint ${
-                saveStatus === "saving"
-                  ? "saving"
-                  : saveStatus === "saved"
-                  ? "saved"
-                  : saveStatus === "error"
-                  ? "error"
-                  : ""
-              }`}
-            >
-              {saveStatus === "saving" && "자동저장 중…"}
-              {saveStatus === "saved" &&
-                `자동저장됨 · ${lastSavedAt ? formatTime(lastSavedAt) : ""}`}
-              {saveStatus === "error" && "자동저장 실패"}
-              {saveStatus === "idle" && (isDirty ? "수정 중" : "대기")}
+                    {item.label}
+                    {item.kind === "main" ? (
+                      <span className="year-event">{item.title}</span>
+                    ) : (
+                      <span className="year-event">{item.event}</span>
+                    )}
+                  </span>
+                );
+              })}
             </div>
           </div>
+        </aside>
+      </div>
+
+      <footer className="footer">
+        {!isEditing && (
+          <>
+            <div className="footer-logo">The Life Gallery</div>
+            <div className="footer-copyright">
+              Copyright 2025. Creative Computing Group. All rights reserved.
+            </div>
+          </>
         )}
-      </div> */}
 
-      <style jsx global>{`
-        html,
-        body {
-          margin: 0;
-          height: 100%;
-          background: #0f0f0f;
-          overflow: hidden;
-        }
-        .timeline-rail {
-          display: none !important;
-        }
-      `}</style>
-
-      <style jsx>{`
-        .wrap {
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: #121212;
-          color: #fff;
-          padding: 3rem;
-        }
-        .hero {
-          flex: 0 0 auto;
-        }
-        .hero-title {
-          margin: 0;
-          font-family: "Cormorant Garamond", ui-serif, Georgia, serif;
-          font-size: clamp(48px, 8vw, 80px);
-          font-style: italic;
-          font-weight: 700;
-          line-height: 1;
-        }
-        .hero-desc {
-          margin: 20px 0 0;
-          color: #e9e9e9;
-          font-family: "Pretendard Variable", ui-sans-serif, system-ui;
-          font-size: 14px;
-          font-weight: 300;
-          line-height: 1.4;
-          letter-spacing: -0.02em;
-        }
-        .hero-desc strong {
-          font-weight: 700;
-        }
-
-        .stage {
-          flex: 1 1 auto;
-          min-height: 0;
-          display: grid;
-          grid-template-columns: 1fr minmax(420px, 520px);
-          align-items: center;
-          background: #101010;
-        }
-
-        .card-area {
-          display: flex;
-          align-items: center;
-          z-index: 2;
-        }
-
-        .right-pane {
-          position: relative;
-          height: 100%;
-          display: grid;
-          grid-template-columns: ${R - 100}px 1fr;
-          align-items: center;
-          user-select: none;
-          touch-action: none;
-        }
-
-        .semi-wheel {
-          position: absolute;
-          left: calc(-${R + 80}px);
-          top: 50%;
-          transform: translateY(-50%);
-          width: ${R * 2 + OUT * 2}px;
-          height: ${R * 2 + OUT * 2}px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1;
-          pointer-events: none;
-        }
-
-        .semi-ring {
-          position: absolute;
-          width: ${R * 2}px;
-          height: ${R * 2}px;
-          border-radius: 50%;
-          border: 2px solid rgba(255, 255, 255, 0.28);
-          -webkit-mask: linear-gradient(
-            90deg,
-            transparent 0 50%,
-            #000 50% 100%
-          );
-          mask: linear-gradient(90deg, transparent 0 50%, #000 50% 100%);
-          left: -120px;
-        }
-        .wheel-col {
-          pointer-events: none;
-        }
-
-        .year-label {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          translate: -50% -50%;
-          padding: 2px 8px;
-          background: transparent;
-          border: 0;
-          cursor: pointer;
-          color: #6a6a6a;
-          font-family: "Yde street";
-          font-size: 0.9375rem;
-          font-weight: 300;
-          line-height: 130%;
-          transition: color 120ms ease, transform 80ms linear;
-          pointer-events: auto;
-        }
-        .year-label.active {
-          color: #fff;
-        }
-        .events {
-          display: flex;
-          flex-direction: row;
-          gap: 10px;
-          justify-self: start;
-        }
-        .events-year {
-          font-size: 18px;
-          color: #eaeaea;
-          line-height: 1;
-          margin-top: 2px;
-        }
-        .events-rule {
-          grid-row: 1 / span 2;
-          width: 1px;
-          height: 160px;
-          background: rgba(255, 255, 255, 0.22);
-          margin: 0 18px;
-        }
-        .events-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          color: #fff;
-          font-family: "Yde street";
-          font-size: 0.9375rem;
-          font-style: normal;
-          font-weight: 300;
-          line-height: normal;
-        }
-        .ev {
-          color: #9f9f9f;
-          background: none;
-          border: none;
-          text-align: left;
-          cursor: pointer;
-        }
-        .ev.on .ev-title {
-          color: #fff;
-          font-weight: 300;
-        }
-        .ev-title {
-          font-size: 18px;
-          line-height: 1.2;
-        }
-        .ev-desc {
-          font-size: 16px;
-          opacity: 0.65;
-        }
-
-        @media (max-width: 1100px) {
-          .stage {
-            grid-template-columns: 1fr;
-            row-gap: 28px;
-          }
-          .right-pane {
-            grid-template-columns: 1fr;
-            justify-items: center;
-          }
-          .events {
-            grid-template-columns: auto;
-            gap: 8px;
-            text-align: center;
-          }
-          .events-rule {
-            display: none;
-          }
-          .bg-semi {
-            left: 50%;
-            transform: translate(-50%, -50%);
-          }
-          .events-list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-          }
-          .ev {
-            text-align: left;
-            background: transparent;
-            border: 0;
-            color: #9f9f9f;
-            padding: 0;
-            cursor: pointer;
-          }
-          .ev.on .ev-title {
-            color: #fff;
-            font-weight: 700;
-          }
-          .ev-title {
-            font-size: 18px;
-            line-height: 1.2;
-          }
-          .ev-desc {
-            display: none;
-          }
-        }
-      `}</style>
-    </div>
+        {!isEditing ? (
+          <button
+            className="login-btn-fixed"
+            onClick={() => setIsEditing(true)}
+            aria-pressed="false"
+            title="로그인하고 편집 모드로 전환"
+          >
+            로그인
+          </button>
+        ) : (
+          <div className="toolbar-anchor" role="region" aria-label="편집 도구">
+            <FloatingToolbar
+              onSave={handleSave}
+              onLogout={() => setIsEditing(false)}
+              isPreview={isPreview}
+              setIsPreview={setIsPreview}
+              isUpdated={isUpdated}
+              onAddTimeline={() => setAddOpen(true)}
+            />
+          </div>
+        )}
+      </footer>
+    </main>
   );
 }
