@@ -122,7 +122,7 @@ export default function Home() {
           position: "relative",
         }}
       >
-        {/* <AboutSweep trigger={trigger} setTrigger={(b) => setTrigger(b)} /> */}
+        <AboutSweep trigger={trigger} setTrigger={(b) => setTrigger(b)} />
         <AboutInfo />
       </div>
 

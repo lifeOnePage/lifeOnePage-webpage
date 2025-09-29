@@ -605,7 +605,7 @@ function SelectItem({ router, initialData, selected, setSelected }) {
             </div>
           )}
           <h2 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
-            {type === "card" ? "LifeCard" : "LifeWheel"}
+            {type === "card" ? "LifeCard" : "LifeReels"}
           </h2>
           <p>
             {type === "card"
