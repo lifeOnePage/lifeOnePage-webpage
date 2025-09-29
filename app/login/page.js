@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { BLACK } from "../styles/colorConfig";
@@ -12,6 +12,7 @@ import {
 } from "../auth/phoneAuth";
 import { auth, firestore } from "../firebase/firebaseConfig";
 import { checkValidIdUnique, fetchUserData } from "../utils/firebaseDb";
+import { generateUniqueUsername } from "../utils/generateUsername";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useUser } from "../contexts/UserContext";
 import { onAuthStateChanged } from "firebase/auth";
@@ -59,35 +60,9 @@ export default function LoginPage() {
     setupRecaptcha("recaptcha-container");
   }, []);
 
-  // useEffect(() => {
-  //   setDataLoading(true);
-  //   const unsub = onAuthStateChanged(auth, async (u) => {
-  //     if (u) {
-  //       console.log(u);
-  //       setUser(u);
-  //       const userRef = doc(firestore, "users", u.uid);
-  //       const userSnap = await getDoc(userRef);
-
-  //       // Firestore에 사용자 문서가 없으면 생성
-  //       if (!userSnap.exists()) {
-  //         await setDoc(userRef, {
-  //           phoneNumber: u.phoneNumber,
-  //           createdAt: serverTimestamp(),
-  //         });
-  //       }
-
-  //       const data = await fetchUserData(u.uid);
-  //       setInitialData(data);
-  //       // setShowAuth(false); // 로그인 완료
-  //     } else {
-  //       // setShowAuth(true); // 로그인 필요
-  //     }
-
-  //     setDataLoading(false); // auth 확인 끝
-  //   });
-
-  //   return () => unsub();
-  // }, []);
+  // 현재 Field 입력 DOM을 관리하기 위한 refs
+  const containerRef = useRef(null);
+  const fieldRefs = useRef({}); // { [key]: HTMLInputElement | HTMLTextAreaElement | null }
 
   // Signup flow state (progressive fields)
   const signupFields = useMemo(
@@ -109,6 +84,11 @@ export default function LoginPage() {
       {
         key: "userId",
         label: "아이디(ID)를 입력해주세요.",
+        subLabel: [
+          "영문+숫자만, 4~24자 (공백·특수문자 불가)",
+          "다른 사람이 사용중인 ID는 사용할 수 없어요.",
+          "예시: calmMiniFox27 (O) / Cool*Tiger (X) / 12cat (X) / my id (X)",
+        ],
         placeholder: "영문 소문자/숫자 조합",
         required: true,
         type: "text",
@@ -126,7 +106,6 @@ export default function LoginPage() {
     ],
     []
   );
-
   const [signupIndex, setSignupIndex] = useState(0); // which field we are on
   const [signupData, setSignupData] = useState({
     name: "",
@@ -135,6 +114,64 @@ export default function LoginPage() {
     email: "",
   });
   const currentSignupField = signupFields[signupIndex];
+
+  useEffect(() => {
+    // signupIndex 변경 시 해당 필드에 포커스 이동
+    const f = signupFields?.[signupIndex];
+    if (!f) return;
+    const el = fieldRefs.current[f.key];
+    if (el && typeof el.focus === "function") {
+      el.focus();
+      // iOS 등에서 안전하게 caret 이동
+      // console.log(el.setSelectionRange)
+      // console.log(typeof el.value)
+      // if (el.setSelectionRange && typeof el.value === "string") {
+      //   const len = el.value.length;
+
+      //   el.setSelectionRange(len, len);
+      // }
+    }
+    // 컨테이너 스크롤 맨 위로
+    if (containerRef.current) {
+      containerRef.current.scrollTo?.({ top: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [signupIndex, signupFields]);
+  const ID_KEY = "userId";
+  const idFieldIndex = signupFields.findIndex((f) => f.key === ID_KEY);
+
+  // const [idStatus, setIdStatus] = useState("idle"); // idle|checking|ok|taken|invalid
+  const [userEditedId, setUserEditedId] = useState(false);
+
+  // ❶ 아이디 필드가 “처음 등장”할 때 자동 생성
+  useEffect(() => {
+    const isCurrentIdStep = stage === "signup" && signupIndex === idFieldIndex;
+    if (!isCurrentIdStep) return;
+    const current = signupData[ID_KEY];
+    if (userEditedId || (current && current.length > 0)) return;
+
+    let mounted = true;
+    (async () => {
+      // setIdStatus("checking");
+      const nick = await generateUniqueUsername();
+      console.log(nick);
+      if (!mounted) return;
+      setSignupData((d) => ({ ...d, [ID_KEY]: nick }));
+      // setIdStatus("ok");
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    stage,
+    signupIndex,
+    idFieldIndex,
+    userEditedId,
+    signupData,
+    setSignupData,
+  ]);
 
   // Login flow state
   const [loginBirth, setLoginBirth] = useState("");
@@ -367,13 +404,15 @@ export default function LoginPage() {
             style={{
               zIndex: 100,
               position: "absolute",
-              top: 14,
+              top: 30,
               left: 14,
-              width: 36,
+              width: "100%",
               height: 36,
               border: "none",
               background: "transparent",
               cursor: "pointer",
+              display: "flex",
+              color: "#ababab",
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -385,6 +424,7 @@ export default function LoginPage() {
                 strokeLinejoin="round"
               />
             </svg>
+            이전으로
           </button>
         )}
 
@@ -429,7 +469,7 @@ export default function LoginPage() {
             )}
 
             {stage === "signup" && (
-              <SlideScreen key="stage-signup">
+              <SlideScreen key="stage-signup" ref={containerRef}>
                 <Header>처음이시군요! 회원가입을 진행할게요.</Header>
                 {/* Current prompt */}
                 <p
@@ -443,34 +483,63 @@ export default function LoginPage() {
                   {currentSignupField.label}
                 </p>
 
-                {/* Progressive list of filled items */}
+                {/* Progressive list of filled items (현재 필드 맨 위 + 이전 항목 아래) */}
                 <div style={{ marginTop: 16 }}>
-                  {signupFields.map((f, idx) => (
-                    <AnimatePresence key={f.key}>
-                      {idx <= signupIndex && (
-                        <motion.div
-                          key={`${f.key}-row`}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -12 }}
-                          transition={{ duration: 0.22 }}
-                          style={{ marginBottom: 12 }}
-                        >
-                          <FieldBlock
-                            label={f.label}
-                            value={signupData[f.key]}
-                            onChange={(v) =>
-                              setSignupData((d) => ({ ...d, [f.key]: v }))
-                            }
-                            placeholder={f.placeholder}
-                            type={f.type}
-                            autoFocus={idx === signupIndex}
-                            disabled={idx < signupIndex} // lock previous fields while showing as history
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  ))}
+                  {(() => {
+                    // 지금까지 등장한 인덱스들
+                    const shownIdxs = Array.from(
+                      { length: signupIndex + 1 },
+                      (_, i) => i
+                    );
+                    // 렌더 순서: 현재 → 과거(시간순 아래로)
+                    const orderedIdxs = [
+                      signupIndex,
+                      ...shownIdxs.slice(0, signupIndex),
+                    ];
+
+                    return orderedIdxs.map((origIdx) => {
+                      const f = signupFields[origIdx];
+                      const isCurrent = origIdx === signupIndex;
+
+                      return (
+                        <AnimatePresence key={f.key}>
+                          <motion.div
+                            key={`${f.key}-row`}
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                            transition={{ duration: 0.22 }}
+                            style={{
+                              marginBottom: 12,
+                              cursor: isCurrent ? "default" : "pointer",
+                            }}
+                            onClick={() => {
+                              if (f.key === ID_KEY) {
+                                // 현재 포커스를 이전 박스로 전환
+                                // setSignupIndex(origIdx);
+                                setUserEditedId(true);
+                              }
+                            }}
+                          >
+                            <FieldBlock
+                              isUserId={f.key === ID_KEY && isCurrent}
+                              label={f.label}
+                              subLabel={f.subLabel}
+                              value={signupData[f.key]}
+                              onChange={(v) =>
+                                setSignupData((d) => ({ ...d, [f.key]: v }))
+                              }
+                              placeholder={f.placeholder}
+                              type={f.type}
+                              autoFocus={isCurrent} // 현재 필드만 autoFocus 힌트
+                              // disabled={!isCurrent} // 현재 필드만 편집 가능
+                              inputRef={(el) => (fieldRefs.current[f.key] = el)} // 포커스 타겟
+                            />
+                          </motion.div>
+                        </AnimatePresence>
+                      );
+                    });
+                  })()}
                 </div>
 
                 {/* Controls */}
@@ -505,7 +574,13 @@ export default function LoginPage() {
                 <Header>
                   {knownName ? <>반가워요, {knownName}님</> : <>반가워요!</>}
                 </Header>
-                <p style={{ fontSize: "0.95rem", color: "#555", marginTop: 8 }}>
+                <p
+                  style={{
+                    fontSize: "0.95rem",
+                    color: "#555",
+                    margin: "8px 0px",
+                  }}
+                >
                   생년월일을 입력해주세요
                 </p>
                 <FieldBlock
@@ -572,26 +647,35 @@ function Header({ children }) {
 }
 
 function FieldBlock({
-  label,
+  isUserId,
+  subLabel,
   value,
   onChange,
   placeholder,
   type = "text",
   autoFocus,
   disabled,
+  inputRef,
 }) {
+  console.log(isUserId);
   return (
     <div>
-      {/* <label
-        style={{
-          display: "block",
-          fontSize: 12,
-          color: "#666",
-          marginBottom: 6,
-        }}
-      >
-        {label}
-      </label> */}
+      {isUserId &&
+        subLabel.map((l) => {
+          return (
+            <label
+              style={{
+                display: "block",
+                fontSize: 14,
+                color: "#aaa",
+                margin: "10px 0px",
+              }}
+            >
+              {l}
+              <br />
+            </label>
+          );
+        })}
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -599,6 +683,7 @@ function FieldBlock({
         type={type}
         autoFocus={autoFocus}
         disabled={disabled}
+        ref={inputRef}
         style={{
           width: "100%",
           height: 50,
@@ -616,6 +701,18 @@ function FieldBlock({
         }
         onBlur={(e) => (e.currentTarget.style.boxShadow = "none")}
       />
+      {isUserId && (
+        <label
+          style={{
+            display: "block",
+            fontSize: 14,
+            color: "#aaa",
+            margin: "10px 0px",
+          }}
+        >
+          {`https://theLifeGallery/wheel/${value}`} <br/>{`https://theLifeGallery/card/${value}`}
+        </label>
+      )}
     </div>
   );
 }

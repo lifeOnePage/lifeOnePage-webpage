@@ -69,14 +69,15 @@ export default function GalleryHeader() {
         alignItems: "center",
         borderBottom: "1px solid #fafafa33",
         padding: "0 16px",
-        backgroundColor: "#fafafa33",
+        backgroundColor: "#fafafa11",
         position: "fixed",
         top: 0,
         left: 0,
         right: 0,
         height: "60px",
         zIndex: 1000,
-        backdropFilter: "brightness(5) blur(40px)",
+        backdropFilter: "blur(40px)",
+        color:"white"
       }}
     >
       <button
@@ -86,7 +87,7 @@ export default function GalleryHeader() {
           border: "none",
           fontWeight: "bold",
           fontSize: "14px",
-          color: "#333",
+          // color: "#333",
           cursor: "pointer",
           whiteSpace: "nowrap",
         }}
@@ -119,7 +120,7 @@ export default function GalleryHeader() {
               style={{
                 cursor: "pointer",
                 padding: "4px 8px",
-                color: isActive ? "#1a1a1a" : "#1a1a1a55",
+                color: isActive ? "#fff" : "#ddd",
                 fontWeight: isActive ? "bold" : "normal",
                 display: "flex",
                 flexDirection: "column",
@@ -168,7 +169,7 @@ export default function GalleryHeader() {
             left: indicatorStyle.left,
             width: indicatorStyle.width,
             height: "3px",
-            backgroundColor: "#1a1a1a",
+            backgroundColor: "#fff",
             transition: "all 0.3s ease",
           }}
         />

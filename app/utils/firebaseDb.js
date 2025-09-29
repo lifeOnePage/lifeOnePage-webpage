@@ -114,14 +114,22 @@ export async function saveLifestorySection(uid, data) {
   const ref = doc(db, "users", uid);
   const updateData = {};
 
-  if (data.motto) updateData["lifestory.motto"] = data.motto;
+  if (data.style) updateData["lifestory.style"] = data.style;
   if (data.story) updateData["lifestory.story"] = data.story;
-  if (data.threadId) updateData["lifestory.threadId"] = data.threadId;
+  if (data.questions) updateData["lifestory.questions"] = data.questions;
+  if (data.answers) updateData["lifestory.answers"] = data.answers;
 
   // 페이지 수정 시간 갱신
   updateData.pageUpdatedAt = serverTimestamp();
 
   await updateDoc(ref, updateData);
+}
+export async function loadLifestorySection(userId) {
+  if (!userId) return null;
+  const ref = doc(db, "users", userId);
+  const snap = await getDoc(ref);
+
+  return snap.exists() ? snap.data() : null;
 }
 
 export async function fetchPhotoGallery(uid) {

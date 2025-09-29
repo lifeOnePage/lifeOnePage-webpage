@@ -8,6 +8,7 @@ import RelationshipGallery from "./RelationshipGallery";
 import { auth } from "../firebase/firebaseConfig";
 import { fetchUserData, savePhotoGalleryCategory } from "../utils/firebaseDb";
 import GalleryHeader from "../components/GalleryHeader";
+import { BLACK } from "../styles/colorConfig";
 
 export default function GalleryPage() {
   const params = useSearchParams();
@@ -75,19 +76,21 @@ export default function GalleryPage() {
     <div
       style={{
         width: "100%",
-        height: "100%",
+        minHeight: "100vh",
         paddingTop: "60px",
         fontFamily: "pretendard",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center",
-        alignItems:"center"
+        // justifyContent: "center",
+        alignItems: "center",
+        background:BLACK
+          // "linear-gradient(135deg, #37393bff 0%, #1e1f21ff 50%, #000 100%)",
       }}
     >
       <GalleryHeader />
       <div
         style={{
-          width:"100vw",
+          width: "100vw",
           maxWidth: "768px",
         }}
       >

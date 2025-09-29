@@ -218,12 +218,12 @@ export default function ExperienceGallery({
               onClick={addNewItem}
               disabled={items.length >= 3}
               style={{
-                border: "1px dashed #888",
-                padding: "8px 12px",
+                border: "1px solid #333",
+                padding: "8px 16px",
                 borderRadius: "10px",
-                background: "transparent",
+                background: "#101010",
                 cursor: items.length >= 3 ? "not-allowed" : "pointer",
-                color: "#555",
+                color: "#fff",
               }}
             >
               + 새로운 경험 추가
@@ -305,8 +305,8 @@ export default function ExperienceGallery({
               key={i}
               style={{
                 flex: "1 1 calc(30% - 20px)",
-                backgroundColor: "#f5f5f5",
-                border: "1px solid #ccc",
+                backgroundColor: "#56565611",
+                border: "1px solid #aaa",
                 borderRadius: "10px",
                 padding: "16px",
                 position: "relative",

@@ -244,7 +244,7 @@ export default function RelationshipGallery({
           <button
             onClick={onSave}
             style={{
-              flex:1,
+              flex: 1,
               alignSelf: "flex-end",
               padding: "8px 16px",
               background: MAIN_THEME,
@@ -275,12 +275,35 @@ export default function RelationshipGallery({
           </div>
         )}
       </div>
+      {Object.keys(relationshipData).length < maxCards && (
+        <div
+          onClick={addNewCard}
+          style={{
+            border: "2px dashed #aaa",
+            borderRadius: "16px",
+            minHeight: "150px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+            cursor: "pointer",
+            color: "#aaa",
+            padding: "10px",
+            textAlign: "center",
+            gap: 14,
+            margin:"20px 0px"
+          }}
+        >
+          <FiPlus size={24} />
+          새로운 인연 추가하기
+        </div>
+      )}
       {isSaving && (
         <div style={{ width: "100%", margin: "10px 0" }}>
           <div
             style={{
               width: "100%",
-              background: "#ddd",
+              // background: "#ddd",
               height: "8px",
               borderRadius: "4px",
               overflow: "hidden",
@@ -308,7 +331,7 @@ export default function RelationshipGallery({
           gap: 20,
         }}
       >
-        {Object.entries(relationshipData).map(([key, entry]) => {
+        {Object.entries(relationshipData).reverse().map(([key, entry]) => {
           const mediaCount = entry.media.length;
           const videoCount = entry.media.filter((m) => m.isVideo).length;
           const photoCount = mediaCount - videoCount;
@@ -324,7 +347,7 @@ export default function RelationshipGallery({
               style={{
                 gridColumn: isExpanded ? "span 3" : "auto",
                 padding: 16,
-                backgroundColor: "#f5f5f5",
+                // backgroundColor: "#f5f5f5",
                 border: "1px solid #ccc",
                 borderRadius: 16,
                 position: "relative",
@@ -642,29 +665,6 @@ export default function RelationshipGallery({
             </motion.div>
           );
         })}
-
-        {Object.keys(relationshipData).length < maxCards && (
-          <div
-            onClick={addNewCard}
-            style={{
-              border: "2px dashed #aaa",
-              borderRadius: "16px",
-              minHeight: "150px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "column",
-              cursor: "pointer",
-              color: "#aaa",
-              padding: "10px",
-              textAlign: "center",
-              gap: 14,
-            }}
-          >
-            <FiPlus size={24} />
-            새로운 인연 추가하기
-          </div>
-        )}
       </div>
 
       <input

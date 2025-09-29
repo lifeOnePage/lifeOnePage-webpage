@@ -3,17 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BLACK } from "../styles/colorConfig";
+import { loadLifestorySection, saveLifestorySection } from "../utils/firebaseDb";
 
-/**
- * LifestorySection
- * - Fills its container (100% width/height)
- * - Intro: waving emoji greeter → "시작하기"
- * - Step 1: Pick style (진중한 / 낭만적인 / 재치있는 / 신비로운)
- * - Step 2: Pick number of questions (5 / 10)
- * - Step 3: Q&A wizard with progress dots and Previous button at top-left of question area
- * - Final: Generate story (BLACKBOX API) then show result in editable textarea and Save (BLACKBOX)
- * - All transitions and entrances are animated with framer-motion
- */
 export default function LifestorySection({
   userId,
   onSaved,
@@ -23,43 +14,153 @@ export default function LifestorySection({
   // --- Steps: 'intro' | 'style' | 'count' | 'qa' | 'result'
   const [step, setStep] = useState("intro");
 
-  // --- Step 1
+  // --- Step 1: 스타일 선택
   const STYLE_OPTIONS = ["진중한", "낭만적인", "재치있는", "신비로운"];
   const [selectedStyle, setSelectedStyle] = useState(null);
 
-  // --- Step 2
+  // --- Step 2: 질문 개수
   const COUNT_OPTIONS = [5, 10];
   const [questionCount, setQuestionCount] = useState(null);
 
-  // --- Step 3
+  // --- Step 3: Q&A
   const [questions, setQuestions] = useState([]); // string[]
   const [answers, setAnswers] = useState([]); // string[]
   const [currentIdx, setCurrentIdx] = useState(0);
 
-  // --- Final
+  /**
+   * ✅ 중복 질문 답변 보존을 위한 맵
+   * key: 질문 텍스트(string), value: 사용자의 답변(string)
+   * - 5 ↔ 10개 전환, "다시 생성하기" 시 fetch된 질문 배열을 기준으로
+   *   기존 답변을 자동 주입합니다.
+   */
+  const [answerMap, setAnswerMap] = useState({});
+
+  // --- Final(결과/저장)
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedStory, setGeneratedStory] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isBootLoading, setIsBootLoading] = useState(true);
+  const [shouldFetchOnQA, setShouldFetchOnQA] = useState(true);
+
+  /**
+   * ✅ 결과 화면 상태
+   * - hasSaved: 저장 완료 여부 (저장 버튼 숨김/노출 제어)
+   * - isEditingResult: 결과를 textarea로 편집 중인지 여부
+   *   (저장 후 기본적으로 읽기 전용 텍스트로 보여주고, 클릭 시 편집 모드로 전환)
+   */
+  const [hasSaved, setHasSaved] = useState(false);
+  const [isEditingResult, setIsEditingResult] = useState(true);
 
   const currentQuestion = questions[currentIdx] ?? "";
   const currentAnswer = answers[currentIdx] ?? "";
 
-  // prep questions when moving to QA
+  // ---------------------------- Lifecycle: QA 진입 시 질문 셋업 ----------------------------
+  /**
+   * ✅ 'qa' 단계 진입 시:
+   *  1) 선택된 스타일/개수 기반 질문 fetch
+   *  2) answerMap을 이용해 겹치는 질문의 기존 답변 주입
+   *  3) 새로운 질문(기존에 없던 텍스트)은 공란으로 초기화
+   */
+
+  // 🔹 최초 마운트/또는 userId 변경 시, Firebase에서 저장된 값 로드
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      if (!userId) {
+        setIsBootLoading(false);
+        return;
+      }
+      try {
+        console.log(userId)
+        const saved = await loadLifestorySection(userId);
+        console.log(saved)
+        if (cancelled) return;
+
+        if (!saved) {
+          // 저장된 게 없다면 처음부터
+          setStep("intro");
+          setIsBootLoading(false);
+          return;
+        }
+
+        // 저장값 반영
+        const {
+          style,
+          questions: savedQuestions = [],
+          answers: savedAnswers = [],
+          story = "",
+        } = saved.lifestory;
+
+        // 스타일/개수 프리셀렉트
+        setSelectedStyle(style ?? null);
+        setQuestionCount(savedQuestions?.length || null);
+
+        // 질문/답변/맵 하이드레이션
+        setQuestions(savedQuestions);
+        setAnswers(savedAnswers);
+        const hydMap = {};
+        savedQuestions.forEach((q, i) => (hydMap[q] = savedAnswers[i] ?? ""));
+        setAnswerMap(hydMap);
+
+        if (story && story.trim()) {
+          // 🔹 저장된 스토리가 있으면 바로 Result 읽기모드로
+          setGeneratedStory(story);
+          setHasSaved(true);
+          setIsEditingResult(false);
+          setStep("result");
+          setShouldFetchOnQA(false); // QA 진입시 fetch 스킵
+        } else if (savedQuestions.length > 0) {
+          // 🔹 스토리는 없고 Q/A만 있으면 QA로 이어서
+          //   - 첫 미답변(또는 마지막 답변) 위치로 커서 이동
+          const nextIdx = Math.max(
+            0,
+            savedAnswers.findIndex((a) => !a || !String(a).trim())
+          );
+          setCurrentIdx(nextIdx === -1 ? savedQuestions.length - 1 : nextIdx);
+          setStep("qa");
+          setShouldFetchOnQA(false); // 하이드레이션한 Q/A를 유지(덮어쓰기 방지)
+        } else if (style) {
+          // 🔹 스타일만 있으면 개수 선택으로
+          setStep("count");
+        } else {
+          setStep("intro");
+        }
+      } catch (e) {
+        console.warn("[hydrate] load error:", e);
+        setStep("intro");
+      } finally {
+        if (!cancelled) setIsBootLoading(false);
+      }
+    }
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
   useEffect(() => {
     if (step === "qa" && selectedStyle && questionCount) {
+      if (!shouldFetchOnQA) {
+        // 하이드레이션으로 이미 채워둔 경우 1회 스킵
+        // 다음부터는 다시 fetch 가능하도록 true로 복구
+        setShouldFetchOnQA(true);
+        return;
+      }
       (async () => {
         const qs = await BLACKBOX_fetchQuestions(selectedStyle, questionCount);
         setQuestions(qs);
-        setAnswers((prev) => {
-          if (prev.length === qs.length) return prev;
-          return Array(qs.length).fill("");
-        });
+
+        // 맵 기반으로 답변 복원 (겹치지 않는 질문은 빈 문자열)
+        const restored = qs.map((q) => answerMap[q] ?? "");
+        setAnswers(restored);
         setCurrentIdx(0);
       })();
     }
-  }, [step, selectedStyle, questionCount]);
+  }, [step, selectedStyle, questionCount]); // eslint-disable-line
 
-  // --- Navigation handlers
+  // ---------------------------- Navigation Handlers ----------------------------
   const goNextFromIntro = () => setStep("style");
   const goNextFromStyle = () => selectedStyle && setStep("count");
   const goNextFromCount = () => {
@@ -71,21 +172,24 @@ export default function LifestorySection({
     if (currentIdx > 0) {
       setCurrentIdx((i) => i - 1);
     } else {
-      // first question → back to count step
+      // 첫 질문에서 이전 → 개수 선택으로
       setStep("count");
     }
   };
 
   const handleNextQA = async () => {
-    // last question → generate
+    // 마지막 질문에서 다음 → 생성
     if (currentIdx === questions.length - 1) {
       setIsGenerating(true);
       try {
         const story = await BLACKBOX_generateStory({
           style: selectedStyle,
+          questions,
           answers,
         });
         setGeneratedStory(story);
+        setHasSaved(false); // 새로 생성되었으니 아직 미저장
+        setIsEditingResult(true); // 기본은 편집 모드
         setStep("result");
       } finally {
         setIsGenerating(false);
@@ -96,31 +200,55 @@ export default function LifestorySection({
   };
 
   const handleDotClick = (idx) => {
-    // allow jumping back to any previous/current index
+    // 진행된 범위 내로만 점프 허용
     if (idx <= currentIdx) setCurrentIdx(idx);
+  };
+
+  // ---------------------------- 결과 재생성 / 저장 ----------------------------
+  /**
+   * ✅ 다시 생성하기:
+   * - 의미상 '처음부터' → 스타일 단계로 이동(step='style')
+   * - 기존 선택값(스타일/개수)은 유지하여 프리셀렉트
+   * - answerMap은 그대로 유지(겹치는 질문 자동 복원 위해)
+   * - 결과 관련 상태 리셋
+   */
+  const handleRegenerate = () => {
+    setGeneratedStory("");
+    setHasSaved(false);
+    setIsEditingResult(true);
+    setStep("style"); // 인트로는 스킵, 첫 유의미 단계로 복귀
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      console.log(userId, selectedStyle, questions, answers, generatedStory);
       await BLACKBOX_saveStory({
         userId: userId ?? "mock-user",
         style: selectedStyle,
+        questions,
         answers,
         story: generatedStory,
       });
+
+      // 콜백 알림
       onSaved?.({
         style: selectedStyle,
         count: questionCount,
+        questions,
         answers,
         story: generatedStory,
       });
+
+      // ✅ 저장 후 뷰 전환: 읽기 전용 + 저장 버튼 숨김
+      setHasSaved(true);
+      setIsEditingResult(false);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // --- Animations
+  // ---------------------------- Animations ----------------------------
   const slide = {
     initial: { x: 24, opacity: 0 },
     animate: { x: 0, opacity: 1, transition: { duration: 0.25 } },
@@ -135,6 +263,7 @@ export default function LifestorySection({
     <div style={wrap}>
       <div style={sheet}>
         <AnimatePresence mode="wait">
+          {/* ---------------------------- Intro ---------------------------- */}
           {step === "intro" && (
             <motion.section
               key="intro"
@@ -161,7 +290,7 @@ export default function LifestorySection({
                   marginBottom: 16,
                 }}
               >
-                <FriendlyWaver size={220} color={BLACK} />
+                {/* 웨이브 이모지 등 인삿말 자리는 필요 시 추가 */}
               </motion.div>
               <motion.h2
                 initial={{ opacity: 0, y: 6 }}
@@ -189,6 +318,7 @@ export default function LifestorySection({
             </motion.section>
           )}
 
+          {/* ---------------------------- Style 선택 ---------------------------- */}
           {step === "style" && (
             <motion.section
               key="style"
@@ -220,6 +350,7 @@ export default function LifestorySection({
             </motion.section>
           )}
 
+          {/* ---------------------------- 질문 개수 선택 ---------------------------- */}
           {step === "count" && (
             <motion.section
               key="count"
@@ -231,7 +362,7 @@ export default function LifestorySection({
             >
               <Header
                 title={`질문 개수를 고를게요`}
-                subtitle="몇 개의 질문에 답하시겠어요? 더 많은 질문에 대답하면 00님의 이야기를 보다 잘 담을 수 있어요."
+                subtitle={`몇 개의 질문에 답하시겠어요? 더 많은 질문에 대답하면 ${userName}님의 이야기를 보다 잘 담을 수 있어요.`}
               />
               <PrevButton onClick={() => setStep("style")} />
               <div style={grid2}>
@@ -245,7 +376,6 @@ export default function LifestorySection({
                 ))}
               </div>
               <Footer>
-                {/* <Secondary onClick={() => setStep("style")}>이전</Secondary> */}
                 <Primary disabled={!questionCount} onClick={goNextFromCount}>
                   다음
                 </Primary>
@@ -253,6 +383,7 @@ export default function LifestorySection({
             </motion.section>
           )}
 
+          {/* ---------------------------- Q&A ---------------------------- */}
           {step === "qa" && (
             <motion.section
               key="qa"
@@ -268,7 +399,7 @@ export default function LifestorySection({
                 onDotClick={handleDotClick}
               />
 
-              {/* Q block with top-left back */}
+              {/* 질문 카드 + 좌상단 이전 버튼 */}
               <div style={{ position: "relative", marginTop: 16 }}>
                 <PrevButton onClick={handlePrevQA} />
                 <motion.div
@@ -289,11 +420,14 @@ export default function LifestorySection({
                     value={currentAnswer}
                     onChange={(e) => {
                       const v = e.target.value;
+                      const q = currentQuestion; // 안전하게 캡처
                       setAnswers((arr) => {
                         const copy = [...arr];
                         copy[currentIdx] = v;
                         return copy;
                       });
+                      // ✅ 질문 텍스트 기준으로 답변 보존
+                      setAnswerMap((prev) => ({ ...prev, [q]: v }));
                     }}
                     placeholder="여기에 답변을 적어주세요"
                     style={textarea}
@@ -313,7 +447,7 @@ export default function LifestorySection({
                 </Primary>
               </Footer>
 
-              {/* Generating overlay */}
+              {/* 생성 오버레이 */}
               <AnimatePresence>
                 {isGenerating && (
                   <motion.div
@@ -332,6 +466,7 @@ export default function LifestorySection({
             </motion.section>
           )}
 
+          {/* ---------------------------- 결과 ---------------------------- */}
           {step === "result" && (
             <motion.section
               key="result"
@@ -341,14 +476,18 @@ export default function LifestorySection({
               exit="exit"
               style={section}
             >
+              {/* 결과에서도 점프 가능(검토/수정 용도) */}
               <ProgressDots
                 total={questions.length}
                 current={questions.length - 1}
-                onDotClick={(i) => setStep("qa") || setCurrentIdx(i)}
+                onDotClick={(i) => {
+                  setStep("qa");
+                  setCurrentIdx(i);
+                }}
               />
 
               <div style={{ position: "relative", marginTop: 16 }}>
-                {/* Go back to review Q&A */}
+                {/* Q&A로 돌아가 재검토 */}
                 <PrevButton
                   onClick={() => {
                     setStep("qa");
@@ -366,29 +505,63 @@ export default function LifestorySection({
                   >
                     생성된 생애문
                   </div>
-                  <textarea
-                    value={generatedStory}
-                    onChange={(e) => setGeneratedStory(e.target.value)}
-                    style={{ ...textarea, minHeight: 220 }}
-                  />
+
+                  {/* ✅ 안내문구: textarea 바깥의 작은 텍스트 */}
+                  <p style={{ margin: "0 0 8px", fontSize: 16, opacity: 0.7 }}>
+                    생애문 생성 초안입니다. 내용을 직접 원하시는대로 다듬은 뒤
+                    저장할 수 있어요.
+                  </p>
+
+                  {/* ✅ 저장 전: 편집 모드 / 저장 후: 읽기 전용(클릭 시 편집 전환) */}
+                  {isEditingResult ? (
+                    <textarea
+                      value={generatedStory}
+                      onChange={(e) => setGeneratedStory(e.target.value)}
+                      style={{ ...textarea, minHeight: 220 }}
+                    />
+                  ) : (
+                    <div
+                      onClick={() => {
+                        setIsEditingResult(true);
+                        setHasSaved(false); // 편집 재시작 → 다시 저장 필요
+                      }}
+                      style={{
+                        border: "1px dashed #9ca3af",
+                        borderRadius: 12,
+                        padding: 14,
+                        background: "#f8fafc",
+                        cursor: "text",
+                        whiteSpace: "pre-wrap",
+                        lineHeight: 1.6,
+                      }}
+                      title="클릭하여 직접 수정할 수 있어요"
+                    >
+                      {generatedStory}
+                    </div>
+                  )}
+
+                  {/* ✅ 읽기 전용 상태 안내 */}
+                  {!isEditingResult && (
+                    <p
+                      style={{ margin: "8px 0 0", fontSize: 16, opacity: 0.7 }}
+                    >
+                      클릭하면 직접 수정할 수 있어요
+                    </p>
+                  )}
                 </motion.div>
               </div>
 
+              {/* ✅ 결과 푸터: [다시 생성하기 / 저장], 저장 후엔 저장 버튼 숨김 */}
               <Footer>
-                <Secondary
-                  onClick={() => {
-                    setStep("qa");
-                    setCurrentIdx(questions.length - 1);
-                  }}
-                >
-                  이전
-                </Secondary>
-                <Primary
-                  onClick={handleSave}
-                  disabled={!generatedStory.trim() || isSaving}
-                >
-                  {isSaving ? "저장 중..." : "저장"}
-                </Primary>
+                <Secondary onClick={handleRegenerate}>다시 생성하기</Secondary>
+                {!hasSaved && (
+                  <Primary
+                    onClick={handleSave}
+                    disabled={!generatedStory.trim() || isSaving}
+                  >
+                    {isSaving ? "저장 중..." : "저장"}
+                  </Primary>
+                )}
               </Footer>
             </motion.section>
           )}
@@ -419,273 +592,6 @@ function Header({ title, subtitle }) {
         </motion.p>
       )}
     </div>
-  );
-}
-
-function FriendlyWaver({ size = 180, color = BLACK, speed = 1 }) {
-  // Subtle face drift synced with ring morph: anchors move a tiny fraction of the ring deformation
-  const t = 1 / Math.max(speed, 0.001);
-  const VBX = 406,
-    VBY = 286;
-
-  // ----- Paths from your three SVGs (rings + right hand) -----
-  const OUT_BASE = `M173.001 4C216.433 4 255.59 16.7688 283.79 37.2139C311.995 57.6623 329.001 85.5681 329.001 116C329.001 146.432 311.995 174.338 283.79 194.786C255.59 215.231 216.433 228 173.001 228C129.569 228 90.4121 215.231 62.2119 194.786C34.0072 174.338 17.001 146.432 17.001 116C17.001 85.5681 34.0072 57.6623 62.2119 37.2139C90.4121 16.7688 129.569 4 173.001 4Z`;
-  const OUT_A = `M159.502 23.6086C202.605 18.2777 243.033 26.1437 273.53 42.9728C304.031 59.8047 324.334 85.412 328.069 115.614C331.805 145.816 318.352 175.598 292.871 199.354C267.393 223.105 230.1 240.584 186.996 245.915C143.893 251.246 103.465 243.38 72.9682 226.551C42.4668 209.719 22.164 184.111 18.4286 153.91C14.6933 123.708 28.1457 93.9257 53.6273 70.1699C79.1048 46.4181 116.398 28.9396 159.502 23.6086Z`;
-  const OUT_B = `M159.281 23.6086C202.385 18.2777 242.813 26.1437 273.309 42.9728C303.81 59.8047 324.113 85.412 327.849 115.614C331.584 145.816 318.132 175.598 292.65 199.354C267.173 223.105 229.879 240.584 186.776 245.915C143.672 251.246 103.244 243.38 72.7477 226.551C42.2462 209.719 21.9434 184.111 18.2081 153.91C14.4727 123.708 27.9251 93.9257 53.4066 70.1699C78.8841 46.4181 116.178 28.9396 159.281 23.6086Z`;
-
-  const IN_BASE = `M173.001 74C206.144 74 235.951 81.4416 257.331 93.2705C278.85 105.176 291.001 120.981 291.001 137.5C291.001 154.019 278.85 169.824 257.331 181.729C235.951 193.558 206.144 201 173.001 201C139.858 201 110.051 193.558 88.6709 181.729C67.1521 169.824 55.001 154.019 55.001 137.5C55.001 120.981 67.1521 105.176 88.6709 93.2705C110.051 81.4416 139.858 74 173.001 74Z`;
-  const IN_A = `M166.698 85.4528C199.591 81.3847 230.086 85.1114 252.756 94.2267C275.574 103.401 289.573 117.595 291.6 133.989C293.628 150.383 283.509 167.56 263.614 182.017C243.848 196.381 215.179 207.424 182.287 211.492C149.394 215.561 118.899 211.834 96.229 202.719C73.4115 193.544 59.4124 179.35 57.3848 162.956C55.3572 146.562 65.4765 129.386 85.3713 114.929C105.138 100.565 133.806 89.5209 166.698 85.4528Z`;
-  const IN_B = `M166.478 85.4528C199.37 81.3847 229.865 85.1114 252.535 94.2267C275.353 103.401 289.352 117.595 291.38 133.989C293.408 150.383 283.288 167.56 263.393 182.017C243.627 196.381 214.958 207.424 182.066 211.492C149.173 215.561 118.678 211.834 96.008 202.719C73.1905 193.544 59.1914 179.35 57.1638 162.956C55.1362 146.562 65.2555 129.386 85.1506 114.929C104.917 100.565 133.585 89.5209 166.478 85.4528Z`;
-
-  const RH_DOWN = `M304.924 189.606C314.852 185.676 327.32 191.45 332.232 203.859C337.144 216.269 332.006 229.011 322.078 232.941C312.149 236.871 299.682 231.098 294.769 218.689C289.857 206.279 294.995 193.536 304.924 189.606Z`;
-  const RH_W1 = `M349.792 148.932C344.392 139.72 348.194 126.517 359.708 119.767C371.221 113.018 384.599 116.15 389.999 125.361C395.399 134.573 391.598 147.776 380.084 154.526C368.571 161.276 355.192 158.144 349.792 148.932Z`;
-  const RH_W2 = `M358.634 155.011C348.459 151.772 342.457 139.413 346.505 126.695C350.551 113.977 362.593 107.36 372.768 110.599C382.944 113.837 388.946 126.196 384.898 138.914C380.851 151.632 368.81 158.249 358.634 155.011Z`;
-
-  // Facial feature bases + small drift targets (a fraction of the expressive deltas)
-  const L = {
-    cx: 125.501,
-    cy: 137.5,
-    rx: 10.5,
-    ry: 12.5,
-    rx2: 13.2652,
-    ry2: 8.81094,
-    rot: -16,
-    dx: 127.352 - 125.501,
-    dy: 154.303 - 137.5,
-  };
-  const R = {
-    cx: 221.501,
-    cy: 137.5,
-    rx: 10.5,
-    ry: 12.5,
-    rx2: 12.9773,
-    ry2: 9.00749,
-    rot: 16,
-    dx: 222.626 - 221.501,
-    dy: 142.52 - 137.5,
-  };
-  const M = {
-    cx: 173.501,
-    cy: 143,
-    rx: 14.5,
-    ry: 7,
-    rot: -7,
-    dx: 175.664 - 173.501,
-    dy: 153.87 - 143,
-  };
-
-  // Amplitude scales for subtlety
-  const EYE_MOVE = 0.3; // 18% of full keyframe shift
-  const EYE_ROT = 0.8; // 35% of keyframe rotation
-  const EYE_SHAPE = 0.6; // 60% toward squint shape
-  const MOUTH_MOVE = 0.3;
-  const MOUTH_ROT = 0.8;
-
-  // Derived targets
-  const LrxT = L.rx + (L.rx2 - L.rx) * EYE_SHAPE;
-  const LryT = L.ry + (L.ry2 - L.ry) * EYE_SHAPE;
-  const RrxT = R.rx + (R.rx2 - R.rx) * EYE_SHAPE;
-  const RryT = R.ry + (R.ry2 - R.ry) * EYE_SHAPE;
-
-  const ringTimes = [0, 0.25, 0.5, 0.75, 1];
-  const ringDur = 4.8 * t;
-
-  const handDur = 3.8 * t;
-  const handTimes = [0, 0.18, 0.36, 0.52, 0.68, 0.84, 0.95, 1];
-
-  return (
-    <motion.svg
-      width={size}
-      height={(size * VBY) / VBX}
-      viewBox={`0 0 ${VBX} ${VBY}`}
-      style={{ color }}
-    >
-      {/* overall gentle bob */}
-      <motion.g
-        initial={{ y: 0 }}
-        animate={{ y: [0, -2, 0] }}
-        transition={{ duration: 2.6 * t, repeat: Infinity, ease: "easeInOut" }}
-      >
-        {/* Rings morph */}
-        <motion.path
-          d={OUT_BASE}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          animate={{ d: [OUT_BASE, OUT_A, OUT_B, OUT_A, OUT_BASE] }}
-          transition={{
-            duration: ringDur,
-            repeat: Infinity,
-            ease: "easeInOut",
-            times: ringTimes,
-          }}
-        />
-        <motion.path
-          d={IN_BASE}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          animate={{ d: [IN_BASE, IN_A, IN_B, IN_A, IN_BASE] }}
-          transition={{
-            duration: ringDur,
-            repeat: Infinity,
-            ease: "easeInOut",
-            times: ringTimes,
-          }}
-        />
-
-        {/* Face: add tiny synchronized drift to avoid stiffness */}
-        {/* LEFT EYE */}
-        <motion.ellipse
-          cx={L.cx}
-          cy={L.cy}
-          rx={L.rx}
-          ry={L.ry}
-          fill="currentColor"
-          animate={{
-            x: [0, L.dx * EYE_MOVE, L.dx * EYE_MOVE * 0.7, L.dx * EYE_MOVE, 0],
-            y: [0, L.dy * EYE_MOVE, L.dy * EYE_MOVE * 0.7, L.dy * EYE_MOVE, 0],
-            rotate: [
-              0,
-              L.rot * EYE_ROT,
-              L.rot * EYE_ROT * 0.7,
-              L.rot * EYE_ROT,
-              0,
-            ],
-            rx: [L.rx, LrxT, LrxT * 0.96 + L.rx * 0.04, LrxT, L.rx],
-            ry: [L.ry, LryT, LryT * 0.96 + L.ry * 0.04, LryT, L.ry],
-          }}
-          transition={{
-            duration: ringDur,
-            repeat: Infinity,
-            ease: "easeInOut",
-            times: ringTimes,
-          }}
-          style={{ transformOrigin: `${L.cx}px ${L.cy}px` }}
-        />
-
-        {/* RIGHT EYE */}
-        <motion.ellipse
-          cx={R.cx}
-          cy={R.cy}
-          rx={R.rx}
-          ry={R.ry}
-          fill="currentColor"
-          animate={{
-            x: [0, R.dx * EYE_MOVE, R.dx * EYE_MOVE * 0.7, R.dx * EYE_MOVE, 0],
-            y: [0, R.dy * EYE_MOVE, R.dy * EYE_MOVE * 0.7, R.dy * EYE_MOVE, 0],
-            rotate: [
-              0,
-              R.rot * EYE_ROT,
-              R.rot * EYE_ROT * 0.7,
-              R.rot * EYE_ROT,
-              0,
-            ],
-            rx: [R.rx, RrxT, RrxT * 0.96 + R.rx * 0.04, RrxT, R.rx],
-            ry: [R.ry, RryT, RryT * 0.96 + R.ry * 0.04, RryT, R.ry],
-          }}
-          transition={{
-            duration: ringDur,
-            repeat: Infinity,
-            ease: "easeInOut",
-            times: ringTimes,
-          }}
-          style={{ transformOrigin: `${R.cx}px ${R.cy}px` }}
-        />
-
-        {/* MOUTH */}
-        <motion.ellipse
-          cx={M.cx}
-          cy={M.cy}
-          rx={M.rx}
-          ry={M.ry}
-          fill="currentColor"
-          animate={{
-            x: [
-              0,
-              M.dx * MOUTH_MOVE,
-              M.dx * MOUTH_MOVE * 0.7,
-              M.dx * MOUTH_MOVE,
-              0,
-            ],
-            y: [
-              0,
-              M.dy * MOUTH_MOVE,
-              M.dy * MOUTH_MOVE * 0.7,
-              M.dy * MOUTH_MOVE,
-              0,
-            ],
-            rotate: [
-              0,
-              M.rot * MOUTH_ROT,
-              M.rot * MOUTH_ROT * 0.7,
-              M.rot * MOUTH_ROT,
-              0,
-            ],
-          }}
-          transition={{
-            duration: ringDur,
-            repeat: Infinity,
-            ease: "easeInOut",
-            times: ringTimes,
-          }}
-          style={{ transformOrigin: `${M.cx}px ${M.cy}px` }}
-        />
-
-        {/* RIGHT HAND: DOWN → wave ↔ wave' → DOWN */}
-        <motion.g
-          style={{ transformOrigin: `368px 142px` }}
-          animate={{
-            rotate: [0, 10, -8, 10, -8, 8, 0, 0],
-            x: [0, 4, 0, 4, 0, 4, 0, 0],
-            y: [0, 1, 0, 1, 0, 1, 0, 0],
-          }}
-          transition={{
-            duration: handDur,
-            repeat: Infinity,
-            ease: "easeInOut",
-            times: handTimes,
-          }}
-        >
-          <motion.path
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={8}
-            animate={{
-              d: [RH_DOWN, RH_W1, RH_W2, RH_W1, RH_W2, RH_W1, RH_DOWN, RH_DOWN],
-            }}
-            transition={{
-              duration: handDur,
-              repeat: Infinity,
-              ease: "easeInOut",
-              times: handTimes,
-            }}
-          />
-        </motion.g>
-
-        {/* LEFT HAND (idle) */}
-        <motion.g
-          style={{ transformOrigin: `30px 240px` }}
-          animate={{ rotate: [0, -3, 0, 3, 0] }}
-          transition={{
-            duration: 4.2 * t,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          <path
-            d={`M41.0772 189.606C31.1487 185.676 18.681 191.45 13.7688 203.859C8.85677 216.269 13.9951 229.011 23.9235 232.941C33.8519 236.871 46.3193 231.098 51.2315 218.689C56.1437 206.279 51.0057 193.536 41.0772 189.606Z`}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={8}
-          />
-        </motion.g>
-      </motion.g>
-    </motion.svg>
   );
 }
 
@@ -792,11 +698,7 @@ function ProgressDots({ total, current, onDotClick }) {
       {new Array(Math.max(total, 0)).fill(0).map((_, i) => {
         const state = i < current ? "done" : i === current ? "current" : "todo";
         const bg =
-          state === "done"
-            ? BLACK
-            : state === "current"
-            ? "#1a1a1a33"
-            : "none";
+          state === "done" ? BLACK : state === "current" ? "#1a1a1a33" : "none";
         const scale = state === "current" ? 1.2 : 1;
         return (
           <motion.button
@@ -833,8 +735,6 @@ function PrevButton({ onClick }) {
         left: -8,
         height: 40,
         borderRadius: 999,
-        // border: "1px solid #1f2937",
-        // background: "#0b1220",
         color: BLACK,
         display: "flex",
         placeItems: "center",
@@ -907,7 +807,7 @@ const section = {
   height: "100%",
   display: "flex",
   flexDirection: "column",
-  position:"relative"
+  position: "relative",
 };
 const grid4 = {
   display: "grid",
@@ -931,7 +831,6 @@ const card = {
 };
 const qaCard = {
   borderRadius: 14,
-  // border: "1px solid #1f2937",
   background: "#fafafa",
   padding: 16,
 };
@@ -971,9 +870,10 @@ const Footer = ({ children }) => (
   </div>
 );
 
-/** -------------------- BLACKBOX APIs -------------------- */
+/** -------------------- BLACKBOX APIs (Mocks) -------------------- */
 async function BLACKBOX_fetchQuestions(style, count) {
   // Replace with your real question generator. Here is a simple mock.
+  // ⚠️ 5/10개 옵션의 "겹침"을 위해 0~4번 문항은 언제나 동일하게 유지
   const base = [
     "어릴 적 가장 소중한 기억은 무엇인가요?",
     "당신을 지금의 당신으로 만든 전환점은 언제였나요?",
@@ -986,29 +886,68 @@ async function BLACKBOX_fetchQuestions(style, count) {
     "지난 시간 속 당신이 꼭 전하고 싶은 한 마디는?",
     "앞으로의 당신에게 바라는 점은 무엇인가요?",
   ];
-  // Optionally mix tone into question wording (omitted in mock)
   await delay(200);
   return base.slice(0, count);
 }
 
-async function BLACKBOX_generateStory({ style, answers }) {
-  // Replace with real backend call. This mock stitches answers.
-  await delay(800);
-  const body = answers
-    .filter(Boolean)
-    .map((a, i) => `${i + 1}. ${a.trim()}`)
-    .join(" ");
-  return `(${style})의 분위기로 정리한 생애문 초안입니다.
+// 기존 mock을 이 함수로 완전히 교체하세요.
+async function BLACKBOX_generateStory({ style, questions, answers }) {
+  // Q/A를 OpenAI에 보낼 메시지 배열로 직렬화
+  // 형식: bot(assistant): "질문: ...", user: "답변: ..."
+  console.log(questions, answers, style);
+  const qaMessages = [];
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    const a = answers[i];
+    if (!q) continue;
+    qaMessages.push({ sender: "bot", text: `질문: ${q}` });
+    // 답변이 비어있으면 유추 금지를 안내에 이미 포함되어 있으므로, 빈 답변도 그대로 전달 가능
+    qaMessages.push({ sender: "user", text: `답변: ${a ?? ""}` });
+  }
 
-${body}
+  const res = await fetch("/api/gpt-story", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      style,
+      messages: qaMessages,
+    }),
+  });
 
-원하시면 내용을 자유롭게 다듬고 저장해 주세요.`;
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`[gpt-story] ${res.status} ${txt}`);
+  }
+
+  const data = await res.json();
+  return (
+    data.story ??
+    "죄송합니다. 생애문 생성에 도중 문제가 생겼어요. 다시 생성하기를 눌러 재시도해보세요."
+  );
 }
 
-async function BLACKBOX_saveStory({ userId, style, answers, story }) {
+async function BLACKBOX_saveStory({
+  userId,
+  style,
+  questions,
+  answers,
+  story,
+}) {
   // Replace with Firestore write.
-  console.log("[SAVE]", { userId, style, answers, story });
-  await delay(500);
+  // console.log("[SAVE]", { userId, style, answers, story });
+  try {
+    const updateData = {
+      story,
+      style,
+      questions,
+      answers,
+    };
+
+    await saveLifestorySection(userId, updateData);
+  } catch (e) {
+    console.warn(e);
+    return false;
+  }
   return true;
 }
 

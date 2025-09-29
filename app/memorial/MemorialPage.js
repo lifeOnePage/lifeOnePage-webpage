@@ -75,13 +75,6 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   const topImageRef = useRef();
   const controlsRef = useRef(null);
   const ringRef = useRef();
-  const snapRef = useRef({
-    vh: 0,
-    locked: true, // < 200vh 에선 잠금
-    animating: false,
-    touchStartY: 0,
-    t: 0, // timeout id
-  });
 
   const { setDataLoading } = useUser();
 
@@ -169,127 +162,15 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
       photoGallery: gallery ?? null,
     });
     setDataLoading(false);
-    if (!isMe) return;
+    if (!isMe) {
+      setIsBeforeLogin(true);
+      setIsPreview(true);
+      return;
+    }
 
     setIsBeforeLogin(false);
     setIsPreview(false);
   }, [initialData]);
-  useEffect(() => {
-    const st = snapRef.current;
-    const EPS = 1;
-
-    const updateVh = () => {
-      st.vh = window.innerHeight || document.documentElement.clientHeight || 0;
-    };
-    const inLockZone = () => window.scrollY < 2 * st.vh - EPS;
-
-    const clearAnimFlag = () => {
-      st.animating = false;
-      st.locked = inLockZone();
-    };
-
-    const smoothTo = (top) => {
-      st.animating = true;
-      window.scrollTo({ top, behavior: "smooth" });
-      clearTimeout(st.t);
-      // 브라우저별 스무스 시간 여유
-      st.t = setTimeout(clearAnimFlag, 500);
-    };
-
-    const clamp = (n, a, b) => Math.min(Math.max(n, a), b);
-    const idxAt = () => Math.round(window.scrollY / st.vh);
-
-    const goSnap = (dir) => {
-      const i = idxAt();
-      // 200vh에서 아래로는 잠금 해제 → 자유 스크롤
-      if (i === 2 && dir > 0) {
-        st.locked = false;
-        return;
-      }
-      const next = clamp(i + dir, 0, 2);
-      smoothTo(next * st.vh);
-    };
-
-    const onWheel = (e) => {
-      if (!st.locked) return; // 자유 구간
-      e.preventDefault(); // 기본 스크롤 차단
-      if (st.animating) return;
-      const dir = e.deltaY > 0 ? 1 : -1;
-      goSnap(dir);
-    };
-
-    const onKey = (e) => {
-      // ❶ 입력중이면 아무것도 하지 않음 (스페이스/화살표 등 모두 허용)
-      if (isTypingIntoEditable(e)) return;
-
-      // ❷ 수정키가 눌린 경우(복사/검색 등) 무시
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      if (!st.locked) return; // 자유 구간이면 기본 동작
-
-      const down = ["PageDown", "ArrowDown", " "]; // space = 아래
-      const up = ["PageUp", "ArrowUp", "Shift "]; // Shift+Space = 위로
-
-      // Space/Shift+Space 처리
-      if (e.key === " ") {
-        e.preventDefault();
-        goSnap(e.shiftKey ? -1 : 1);
-        return;
-      }
-
-      // 방향키/페이지키 처리
-      if ([...down, ...up].includes(e.key)) {
-        e.preventDefault();
-        goSnap(down.includes(e.key) ? 1 : -1);
-      }
-    };
-
-    const onTouchStart = (e) => {
-      st.touchStartY = e.touches[0]?.clientY ?? 0;
-    };
-    const onTouchEnd = (e) => {
-      if (!st.locked) return;
-      const endY = e.changedTouches?.[0]?.clientY ?? st.touchStartY;
-      const dy = st.touchStartY - endY;
-      if (Math.abs(dy) < 8) return; // 탭/미세 스크롤 무시
-      goSnap(dy > 0 ? 1 : -1);
-    };
-
-    const onScroll = () => {
-      // 자유구간 진입/복귀 자동 전환
-      if (!st.animating) st.locked = inLockZone();
-    };
-
-    const onResize = () => {
-      updateVh();
-      // 리사이즈 직후 스냅 오차 방지: 근처 스냅 포인트로 살짝 정렬
-      if (st.locked) {
-        const i = idxAt();
-        smoothTo(i * st.vh);
-      }
-    };
-
-    updateVh();
-    st.locked = inLockZone();
-
-    window.addEventListener("resize", onResize);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("wheel", onWheel, { passive: false }); // 중요!
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: false });
-
-    return () => {
-      clearTimeout(st.t);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
-    };
-  }, []);
-
   const handlePersonChange = (updatedPerson) => {
     setIsUpdated(true);
     setPerson(updatedPerson);
@@ -368,23 +249,19 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   // 세로가 더 길면(width: 100vw, height: auto)
   const isLandscape = width > height;
 
-  const isSmallScreen = width < 768; // 가로폭 500px 이하 여부
+  const isSmallScreen = width < 768;
 
-  const leftPaneStyle = isSmallScreen
-    ? {
-        position: "relative",
-        width: "auto",
-        // transform: imageTransformValue,
-        transition: "transform 0.5s ease",
-      }
-    : {
-        position: "relative",
-        width: "auto",
-        height: "auto",
-        maxHeight: "400px",
-        // transform: imageTransformValue,
-        transition: "transform 0.5s ease",
-      };
+  const leftPaneStyle = {
+    position: "relative",
+    width: "auto",
+    // transform: imageTransformValue,
+    // transition: "transform 0.5s ease",
+    color: "#fefefe",
+    margin: "30px 20px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+  };
 
   function handleLockCategory(catName) {
     ringRef.current?.goToCategory(catName);
@@ -437,15 +314,30 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
   }, []);
 
   // threefiber 씬 스타일
-  const rightPaneStyle = {
-    position: "relative",
-    // width: isSmallScreen ? "1200px" : "120vw",
-    width: "100vw",
-    minWidth: "1200px",
-    height: "100vh",
-    overflow: "scroll",
-    transition: "all 0.5s ease",
-  };
+  const rightPaneStyle = isSmallScreen
+    ? {
+        position: "relative",
+        // width: isSmallScreen ? "1200px" : "120vw",
+        width: "100%",
+        minWidth: "1100px",
+        height: "100vh",
+        display: "flex",
+
+        // transform: "translateX(50%)",
+        // overflow: "scroll",
+        transition: "all 0.5s ease",
+      }
+    : {
+        position: "relative",
+        // width: isSmallScreen ? "1200px" : "120vw",
+        width: "150%",
+        // minWidth: "1100px",
+        height: "100vh",
+        transform: "translateX(10%)",
+        display: "flex",
+        // overflow: "scroll",
+        transition: "all 0.5s ease",
+      };
 
   //스크롤값 섹션 감지
   useEffect(() => {
@@ -651,46 +543,65 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
                 alignContent: "center",
               }}
             >
-              {!isBeforeLogin && !isPreview && (
-                <button
-                  onClick={() => {
-                    if (isUpdated)
-                      alert(
-                        "아직 저장되지 않은 변경사항이 있어요. 저장하시겠어요?"
-                      );
-                    router.push("/gallery");
-                  }}
-                  style={{
-                    position: "absolute",
-                    top: 20,
-                    right: 20,
-                    padding: "8px 16px",
-                    backgroundColor: "#7f1d1d",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "6px",
-                    zIndex: 2000,
-                    cursor: "pointer",
-                  }}
-                >
-                  갤러리 편집
-                </button>
-              )}
               <div style={leftPaneStyle}>
-                <div
+                {/* <div
                   style={{
                     color: "#fefefe",
-                    padding: "50px 20px",
+                    margin: "30px 20px",
                   }}
-                >
-                  <strong style={{ color: "#fefefe", fontSize: "1.8rem" }}>
-                    {person.name}님의 영상기록관
-                  </strong>
-                </div>
+                > */}
+                <strong style={{ color: "#fefefe", fontSize: "1.8rem" }}>
+                  {person.name}님의 영상기록관
+                </strong>
+
+                {/* </div> */}
+                {!isBeforeLogin && !isPreview && (
+                  <button
+                    onClick={() => {
+                      if (isUpdated)
+                        alert(
+                          "아직 저장되지 않은 변경사항이 있어요. 저장하시겠어요?"
+                        );
+                      router.push("/gallery");
+                    }}
+                    style={{
+                      // position: "absolute",
+                      // top: 60,
+                      // right: 20,
+                      padding: "8px 16px",
+                      backgroundColor: "#7f1d1d",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "6px",
+                      zIndex: 2000,
+                      cursor: "pointer",
+                    }}
+                  >
+                    갤러리 편집
+                  </button>
+                )}
               </div>
+              <GalleryNav
+                person={person}
+                activeCategory={activeCategory}
+                activeSubCategory={activeSubCategory}
+                forcedCategory={forcedCategory}
+                forcedSubcategory={forcedSubcategory}
+                onCategoryClick={handleCategoryClick}
+                onLockCategory={handleLockCategory}
+                onSubcategoryClick={handleSubcategoryClick}
+                onLockSubcategory={handleLockSubcategory}
+              />
+              {/* <p style={{ margin:20, color: "#fefefe", fontSize: "1rem" }}>
+                  {person.name}님의 영상기록관
+                </p> */}
+
               {/* 2) ThreeFiberScene (오른쪽으로 이동) */}
               <div style={rightPaneStyle}>
-                <Canvas camera={{ position: [0, 80, 600], fov: 75 }}>
+                <Canvas
+                  camera={{ position: [0, 10, 400], fov: 75 }}
+                  pointerEvents={false}
+                >
                   <ambientLight intensity={0.5} />
                   <directionalLight position={[100, 200, 300]} intensity={1} />
 
@@ -721,19 +632,19 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
                   />
                 </Canvas>
               </div>
+              {/* <GalleryNav
+                person={person}
+                activeCategory={activeCategory}
+                activeSubCategory={activeSubCategory}
+                forcedCategory={forcedCategory}
+                forcedSubcategory={forcedSubcategory}
+                onCategoryClick={handleCategoryClick}
+                onLockCategory={handleLockCategory}
+                onSubcategoryClick={handleSubcategoryClick}
+                onLockSubcategory={handleLockSubcategory}
+              /> */}
             </div>
           </div>
-          <GalleryNav
-            person={person}
-            activeCategory={activeCategory}
-            activeSubCategory={activeSubCategory}
-            forcedCategory={forcedCategory}
-            forcedSubcategory={forcedSubcategory}
-            onCategoryClick={handleCategoryClick}
-            onLockCategory={handleLockCategory}
-            onSubcategoryClick={handleSubcategoryClick}
-            onLockSubcategory={handleLockSubcategory}
-          />
         </div>
       </div>
     </div>

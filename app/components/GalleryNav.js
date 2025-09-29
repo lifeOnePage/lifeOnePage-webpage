@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { GoFold, GoUnfold } from "react-icons/go";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { SlArrowDown, SlArrowRight } from "react-icons/sl";
 
 export default function GalleryNav({
@@ -14,22 +13,35 @@ export default function GalleryNav({
   onSubcategoryClick,
   onLockSubcategory,
 }) {
+  const shouldReduce = useReducedMotion();
+
   const [openCat, setOpenCat] = useState("유년시절");
   const [subCat, setSubCat] = useState(null);
 
   const experienceList = person?.photoGallery?.experience || [];
   const relationshipObj = person?.photoGallery?.relationship || {};
   const relationshipList = Object.values(relationshipObj);
+  const UI = {
+    THUMB: 64, // 썸네일 지름(px)
+    GAP: 10, // 아이템 간 간격
+    PADDING: 8, // 칩 내부 패딩
+    RADIUS: 12, // 칩 둥근모서리
+    BORDER_ON: "1px solid rgba(255,255,255,0.65)",
+    BORDER_OFF: "1px solid rgba(255,255,255,0.15)",
+    BG_ON: "rgba(255,255,255,0.08)",
+    BG_OFF: "transparent",
+  };
 
   useEffect(() => {
     if (openCat === "소중한 기억" && experienceList.length > 0) {
-      setSubCat(experienceList[0].title);
+      setSubCat((prev) => prev ?? experienceList[0].title);
     } else if (openCat === "소중한 인연" && relationshipList.length > 0) {
-      setSubCat(relationshipList[0].name);
+      setSubCat((prev) => prev ?? relationshipList[0].name);
     } else {
       setSubCat(null);
     }
-  }, [openCat]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCat, experienceList.length, relationshipList.length]);
 
   const handleCatClick = (e, cat) => {
     setOpenCat(cat);
@@ -42,170 +54,321 @@ export default function GalleryNav({
     e.stopPropagation();
     if (openCat === "소중한 기억") {
       setSubCat(item.title);
-      onLockSubcategory(item.title);
+      onLockSubcategory?.(item.title);
+      onSubcategoryClick?.(item.title);
     } else if (openCat === "소중한 인연") {
       setSubCat(item.name);
-      onLockSubcategory(item.name);
+      onLockSubcategory?.(item.name);
+      onSubcategoryClick?.(item.name);
     }
   };
+
+  /** ───────────── Motion variants (staggered-menu 느낌) ───────────── */
+  const panelVariants = {
+    hidden: { opacity: 0, y: 8 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: shouldReduce ? 0 : 0.35,
+        ease: "easeOut",
+        when: "beforeChildren",
+        staggerChildren: shouldReduce ? 0 : 0.06,
+      },
+    },
+    exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10, scale: 0.98 },
+    show: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { type: "spring", stiffness: 420, damping: 28, mass: 0.6 },
+    },
+  };
+
+  const subRowVariants = {
+    hidden: { opacity: 0, clipPath: "inset(0 0 100% 0 round 12px)" },
+    show: {
+      opacity: 1,
+      clipPath: "inset(0 0 0% 0 round 12px)",
+      transition: {
+        duration: shouldReduce ? 0 : 0.35,
+        ease: "easeOut",
+        when: "beforeChildren",
+        staggerChildren: shouldReduce ? 0 : 0.04,
+      },
+    },
+    exit: {
+      opacity: 0,
+      clipPath: "inset(0 0 100% 0 round 12px)",
+      transition: { duration: 0.25, ease: "easeIn" },
+    },
+  };
+
+  const chipVariants = {
+    hidden: { opacity: 0, y: 6, scale: 0.96 },
+    show: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { type: "spring", stiffness: 360, damping: 26, mass: 0.7 },
+    },
+  };
+
+  const sectionTitleStyle = (active) => ({
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    fontSize: active ? "1rem" : "0.8rem",
+    color: active ? "#fff" : "#9ca3af",
+    fontWeight: active ? 700 : 300,
+    display: "flex",
+    width: "auto",
+    // alignItems: "center",
+    gap: 8,
+    userSelect: "none",
+  });
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: shouldReduce ? 0 : 0.4, ease: "easeOut" }}
       style={{
-        position: "absolute",
-        left: "20px",
-        top: "80vh",
+        // position: "absolute",
+        // top:600,
         display: "flex",
         flexDirection: "column",
-        gap: "20px",
-        zIndex: "999",
-        padding: "10px 20px",
-        width:120,
-        alignItems: "flex-start",
-        backgroundColor: "#00000088",
-        maxWidth: "90vw",
+        // gap: 16,
+        zIndex: 999,
+        padding: "10px 16px",
+        color: "white",
+        // pointerEvents: "auto",
       }}
     >
+      {/* 토글 핸들 (닫힘 상태) */}
       {!openCat && (
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          style={{ cursor: "pointer", color: "white",margin:"10px 0px",}}
+        <motion.button
+          type="button"
+          whileHover={shouldReduce ? {} : { scale: 1.05 }}
+          whileTap={shouldReduce ? {} : { scale: 0.98 }}
+          style={{
+            cursor: "pointer",
+            color: "white",
+            margin: "6px 0",
+            background: "transparent",
+            border: "none",
+          }}
           onClick={(e) => handleCatClick(e, "유년시절")}
+          aria-label="메뉴 열기"
         >
           <SlArrowRight size={20} />
-        </motion.div>
+        </motion.button>
       )}
 
-      <AnimatePresence>
+      {/* 상단 닫기 버튼 */}
+      {openCat && (
+        <motion.button
+          type="button"
+          variants={itemVariants}
+          whileHover={shouldReduce ? {} : { scale: 1.04 }}
+          whileTap={shouldReduce ? {} : { scale: 0.98 }}
+          style={{
+            cursor: "pointer",
+            margin: "10px 0 20px",
+            color: "white",
+            background: "transparent",
+            border: "none",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+          onClick={(e) => handleCatClick(e, null)}
+          aria-label="메뉴 닫기"
+          aria-expanded={!!openCat}
+        >
+          <SlArrowDown size={18} />
+          <span style={{ fontSize: 14, opacity: 0.9 }}>접기</span>
+        </motion.button>
+      )}
+
+      {/* 패널 (열림 상태) */}
+      <AnimatePresence initial={false} mode="popLayout">
         {openCat && (
           <motion.div
             key="panel"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.4 }}
-            style={{ overflow: "hidden" }}
+            layout
+            variants={panelVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            style={{
+              overflow: "hidden",
+              // background: "rgba(0,0,0,0.35)",
+              // border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 14,
+              backdropFilter: "blur(6px)",
+              padding: "0px 20px",
+              // minWidth: 220,
+              // maxWidth: 420,
+            }}
           >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              style={{ cursor: "pointer", margin:"10px 0px", color: "white" }}
-              onClick={(e) => handleCatClick(e, null)}
-            >
-              <SlArrowDown size={20} />
-            </motion.div>
-
+            {/* 상위 카테고리 리스트 */}
             <motion.div
               layout
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-                color: "white",
-              }}
+              style={{ display: "flex", flexDirection: "column" }}
             >
               {/* 유년시절 */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                style={{
-                  cursor: "pointer",
-                  fontSize: "1rem",
-                  color: openCat === "유년시절" ? "#fff" : "#888",
-                }}
-                onClick={(e) => handleCatClick(e, "유년시절")}
-              >
-                유년시절
-              </motion.div>
+              <div style={{ padding: "20px 0px" }}>
+                <motion.div
+                  layout
+                  variants={itemVariants}
+                  whileHover={shouldReduce ? {} : { x: 2 }}
+                  style={sectionTitleStyle(openCat === "유년시절")}
+                  onClick={(e) => handleCatClick(e, "유년시절")}
+                  role="button"
+                  aria-pressed={openCat === "유년시절"}
+                >
+                  유년시절
+                </motion.div>
+              </div>
 
               {/* 소중한 기억 */}
               <motion.div
-                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                layout
+                variants={itemVariants}
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  width: "100%",
+                  borderTop: "1px solid #555",
+                  padding: "20px 0px",
+                  // background: openCat === "소중한 기억" ? "#00000055" : "none",
+                  // padding:openCat === "소중한 기억" ? "15px 20px": 0,
+                  // borderRadius:20
+                }}
               >
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  style={{
-                    cursor: "pointer",
-                    fontSize: "1rem",
-                    color: openCat === "소중한 기억" ? "#fff" : "#888",
-                  }}
+                  layout
+                  whileHover={shouldReduce ? {} : { x: 2 }}
+                  style={sectionTitleStyle(openCat === "소중한 기억")}
                   onClick={(e) => handleCatClick(e, "소중한 기억")}
+                  role="button"
+                  aria-pressed={openCat === "소중한 기억"}
                 >
                   소중한 기억
                 </motion.div>
-                <AnimatePresence>
+
+                <AnimatePresence initial={false} mode="wait">
                   {openCat === "소중한 기억" && (
-                    <>
+                    <div
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        // flex:1,
+                        overflowX: "scroll",
+                        flexDirection: "column",
+                      }}
+                    >
+                      {/* 썸네일 칩 행 (1열) */}
                       <motion.div
-                        key="exp"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
+                        key="exp-row"
+                        layout
+                        variants={subRowVariants}
+                        initial="hidden"
+                        animate="show"
+                        exit="exit"
                         style={{
                           display: "flex",
-                          gap: "12px",
-                          padding: "10px 0px",
-                          overflowX: "auto",
+                          width: "auto",
+                          // flex: 1,
+                          // flexDirection: "column",
+                          gap: UI.GAP,
+                          // padding: "10px 0 4px",
+                          // overflowX: "scroll",
                         }}
                       >
                         {experienceList.map((exp, idx) => {
                           const selected = subCat === exp.title;
+                          const thumb =
+                            exp.photos?.[0]?.url || "/placeholder.jpg";
                           return (
-                            <div
+                            <motion.button
+                              type="button"
                               key={idx}
+                              layout
+                              variants={chipVariants}
+                              whileHover={
+                                shouldReduce ? {} : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={shouldReduce ? {} : { scale: 0.99 }}
                               onClick={(e) => handleSubCatClick(e, exp)}
                               style={{
-                                minWidth: 64,
-                                cursor: "pointer",
-                                padding: 4,
-
-                                borderRadius: 12,
-                                textAlign: "center",
-                                color: "white",
+                                width: 100,
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
+                                gap: 12,
+                                cursor: "pointer",
+                                borderRadius: UI.RADIUS,
+                                textAlign: "left",
+                                color: "white",
+                                background: selected ? UI.BG_ON : UI.BG_OFF,
+                                // border: selected ? UI.BORDER_ON : UI.BORDER_OFF,
+                                padding: UI.PADDING,
                               }}
+                              aria-pressed={selected}
                             >
                               <img
-                                src={exp.photos?.[0]?.url || "/placeholder.jpg"}
+                                src={thumb}
                                 alt=""
                                 style={{
-                                  width: 64,
-                                  height: 64,
+                                  width: UI.THUMB,
+                                  height: UI.THUMB,
                                   objectFit: "cover",
                                   borderRadius: "50%",
                                   border: selected
                                     ? "2px solid white"
                                     : "2px solid transparent",
-                                  marginBottom: 4,
+                                  flex: "0 0 auto",
                                 }}
                               />
-                              <div
-                                style={{ fontSize: "12px", fontWeight: 600 }}
-                              >
-                                {exp.title}
+                              <div style={{ minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    // whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                  title={exp.title}
+                                >
+                                  {exp.title}
+                                </div>
                               </div>
-                            </div>
+                            </motion.button>
                           );
                         })}
                       </motion.div>
 
-                      {/* 상세 설명 영역 */}
+                      {/* 설명 */}
                       <motion.div
                         key="exp-desc"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
+                        layout
+                        variants={subRowVariants}
+                        initial="hidden"
+                        animate="show"
+                        exit="exit"
                         style={{
                           fontSize: "0.9rem",
                           color: "#ddd",
                           whiteSpace: "pre-wrap",
                           textAlign: "left",
-                          maxWidth: "250px",
+                          lineHeight: 1.35,
+                          margin: "10px 0px",
                         }}
                       >
                         {
@@ -213,94 +376,132 @@ export default function GalleryNav({
                             ?.description
                         }
                       </motion.div>
-                    </>
+                    </div>
                   )}
                 </AnimatePresence>
               </motion.div>
 
               {/* 소중한 인연 */}
               <motion.div
-                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                layout
+                variants={itemVariants}
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  width: "100%",
+                  borderTop: "1px solid #555",
+                  padding: "20px 0px",
+                }}
               >
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  style={{
-                    cursor: "pointer",
-                    fontSize: "1rem",
-                    color: openCat === "소중한 인연" ? "#fff" : "#888",
-                  }}
+                  layout
+                  whileHover={shouldReduce ? {} : { x: 2 }}
+                  style={sectionTitleStyle(openCat === "소중한 인연")}
                   onClick={(e) => handleCatClick(e, "소중한 인연")}
+                  role="button"
+                  aria-pressed={openCat === "소중한 인연"}
                 >
                   소중한 인연
                 </motion.div>
-                <AnimatePresence>
+
+                <AnimatePresence initial={false} mode="wait">
                   {openCat === "소중한 인연" && (
                     <motion.div
-                      key="rel"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
+                      key="rel-grid"
+                      layout
+                      variants={subRowVariants}
+                      initial="hidden"
+                      animate="show"
+                      exit="exit"
                       style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(64px, 1fr))",
-                        gap: "12px",
-                        padding: "10px 0px",
-                        maxWidth: "400px",
+                        display: "flex",
+                        // flexDirection: "column",
+                        gap: UI.GAP,
+                        padding: "10px 0 0",
+                        // maxWidth: 420,
+                        // maxHeight: 200,
+                        overflowX: "scroll",
                       }}
                     >
                       {relationshipList.map((rel, idx) => {
                         const selected = subCat === rel.name;
+                        const thumb =
+                          rel.photos?.[rel.representative ?? 0] ||
+                          "/placeholder.jpg";
                         return (
-                          <div
+                          <motion.button
+                            type="button"
                             key={idx}
+                            layout
+                            variants={chipVariants}
+                            whileHover={
+                              shouldReduce ? {} : { y: -2, scale: 1.01 }
+                            }
+                            whileTap={shouldReduce ? {} : { scale: 0.99 }}
                             onClick={(e) => handleSubCatClick(e, rel)}
                             style={{
-                              width: "64px",
+                              width: 100,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: 12,
                               cursor: "pointer",
-                              // padding: 4,
-                              borderRadius: 12,
-                              textAlign: "center",
+                              borderRadius: UI.RADIUS,
+                              textAlign: "left",
                               color: "white",
+                              background: selected ? UI.BG_ON : UI.BG_OFF,
+                              // border: selected ? UI.BORDER_ON : UI.BORDER_OFF,
+                              padding: UI.PADDING,
                             }}
+                            aria-pressed={selected}
+                            title={`${rel.name} · ${rel.relation || ""}`}
                           >
                             <img
-                              src={
-                                rel.photos?.[rel.representative ?? 0] ||
-                                "/placeholder.jpg"
-                              }
+                              src={thumb}
                               alt=""
                               style={{
-                                width: 64,
-                                height: 64,
+                                width: UI.THUMB,
+                                height: UI.THUMB,
                                 objectFit: "cover",
                                 borderRadius: "50%",
-                                marginBottom: 4,
                                 border: selected
                                   ? "2px solid white"
                                   : "2px solid transparent",
+                                flex: "0 0 auto",
                               }}
                             />
                             <div
                               style={{
-                                fontSize: "12px",
-                                fontWeight: 500,
-                                wordBreak: "break-word",
+                                width: 100,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
                               }}
                             >
-                              {rel.name}
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  // whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  // textOverflow: "ellipsis",
+                                }}
+                              >
+                                {rel.name}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  color: "#ccc",
+                                  // whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  // textOverflow: "ellipsis",
+                                }}
+                              >
+                                {rel.relation}
+                              </div>
                             </div>
-                            <div
-                              style={{
-                                fontSize: "10px",
-                                color: "#ccc",
-                                wordBreak: "break-word",
-                              }}
-                            >
-                              {rel.relation}
-                            </div>
-                          </div>
+                          </motion.button>
                         );
                       })}
                     </motion.div>
