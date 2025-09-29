@@ -4,7 +4,6 @@ import "./cardPage.css";
 import FloatingToolbar from "../components/FloatingToolBar-Card";
 
 //초기 지정 변수 모음 (타임라인, 달, 팔레트색상)
-
 const INITIAL_TIMELINE = [
   {
     id: "PLAY",
@@ -61,18 +60,19 @@ const MONTHS = [
   "NOV",
   "DEC",
 ];
+//테마 팔레트
 const BG_THEME_PALETTE = [
   { name: "Coal", bg: "#121212", text: "#F2F2F2" },
   { name: "Rose", bg: "#aa747dff", text: "#ffffffff" },
   { name: "Olive", bg: "#7B7341", text: "#f2f2f2ff" },
   { name: "Warm Gray", bg: "#746F6F", text: "#F2F2F2" },
   { name: "Blue", bg: "#6C8E98", text: "#F2F2F2" },
-  { name: "BlackPink", bg: "#121212ff", text: "#aa747dff" },
+  { name: "BlackPink", bg: "#12121268", text: "#aa747dff" },
   { name: "Parchment", bg: "#F5F1E6", text: "#111111" },
   { name: "Cloud", bg: "#ECECEC", text: "#111111" },
 ];
 
-//년도분리
+//년도 분리 알고리즘
 const toMonthDay = (str) => {
   if (!str) return "";
   const [y, m, d] = str.split(".").map((s) => parseInt(s, 10));
@@ -96,13 +96,13 @@ const getYear = (str) => {
 
 export default function LifeRecord() {
   const [timeline, setTimeline] = useState(INITIAL_TIMELINE);
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState(0); //LP판 회전 정도 지정
   const [activeIdx, setActiveIdx] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isPreview, setIsPreview] = useState(false);
-  const [isUpdated, setIsUpdated] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); //편집 중인지(로그인 상태인지) 확인용
+  const [isPreview, setIsPreview] = useState(false); //미리보기 중인지(로그인상태이면서, floating bar의 미리보기 버튼을 클릭한 상태)
+  const [isUpdated, setIsUpdated] = useState(false); //저장중인지(업데이트 중인지)
 
-  const [addOpen, setAddOpen] = useState(false);
+  //테마 설정
   const DEFAULT_THEME = BG_THEME_PALETTE[0];
   const [theme, setTheme] = useState(DEFAULT_THEME);
 
