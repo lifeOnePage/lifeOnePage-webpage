@@ -105,6 +105,13 @@ body,
   object-fit: cover;
 }
 
+.lr-card-media > video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .lr-cover {
   width: 100%;
   height: 320px;
@@ -255,7 +262,7 @@ body,
 }
 
 .year-item.active {
-  color: #f2f2f2;
+  color: var(--text);
   font-size: 1.25rem;
 }
 
@@ -265,7 +272,7 @@ body,
 }
 
 .year-item.active .year-event {
-  color: #fff;
+  color: var(--text);
 }
 
 .lp-disc {
@@ -346,26 +353,6 @@ body,
     opacity: 1;
     transform: none;
   }
-}
-
-.login-btn-fixed {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  color: #a6a6a6;
-  padding: 0.6rem 1.2rem;
-  font-size: 0.9rem;
-  font-family: "Pretendard Variable";
-  cursor: pointer;
-  font-style: normal;
-  font-weight: 300;
-  line-height: 130%;
-
-  z-index: 1000;
-}
-
-.login-btn-fixed:hover {
-  text-decoration: underline;
 }
 
 /* 타블렛 가로 */
@@ -521,12 +508,6 @@ body,
     pointer-events: none;
     transform: scale(2);
   }
-  .year-circle {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-  }
-
   .year-item {
     position: absolute;
     transform-origin: 0 0;
@@ -554,6 +535,20 @@ body,
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+  }
+
+  .footer {
+    position: fixed;
+    bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0rem;
+  }
+
+  .footer-copyright {
+    font-size: 0.4rem;
   }
 }
 
@@ -654,4 +649,163 @@ body,
 /* 140자 이상 경고 색상 */
 .char-count.warn {
   color: #ff9e63;
+}
+
+/* ===== 배경 색상 패널 ===== */
+.bg-panel {
+  margin-top: 2rem;
+  padding: 12px 14px;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(2px);
+  margin-right: 2rem;
+}
+
+.bg-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.bg-panel-title {
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  font-family: "Pretendard Variable";
+}
+.bg-panel-hint {
+  font-size: 0.8rem;
+  color: #9a9a9a;
+}
+
+.footer {
+  position: fixed;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0rem 3rem;
+}
+
+.footer-logo {
+  font-size: 0.7rem;
+  font-weight: 300;
+  font-family: "Pretendard Variable";
+  color: #a6a6a6;
+}
+
+.footer-copyright {
+  font-size: 0.7rem;
+  font-weight: 300;
+  font-family: "Pretendard Variable";
+  color: #a6a6a6;
+}
+
+.login-btn-fixed {
+  color: #a6a6a6;
+  font-size: 0.9rem;
+  font-family: "Pretendard Variable";
+  cursor: pointer;
+  font-style: normal;
+  font-weight: 300;
+  line-height: 130%;
+  z-index: 1000;
+}
+
+.login-btn-fixed:hover {
+  text-decoration: underline;
+}
+
+.bg-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 28px);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+.swatch:hover {
+  transform: translateY(-2px);
+}
+.swatch.is-active {
+  box-shadow: 0 0 0 2px #fff inset, 0 0 0 2px rgba(255, 255, 255, 0.28);
+  border-color: #fff;
+}
+
+.bg-custom {
+  display: grid;
+  grid-template-columns: auto 40px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+.bg-custom label {
+  font-size: 0.85rem;
+  color: #c8c8c8;
+}
+.bg-custom input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #3a3a3a;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.bg-custom .bg-hex {
+  height: 32px;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #1a1a1a;
+  color: #eaeaea;
+}
+
+/* 모바일 최적화 */
+@media (max-width: 600px) {
+  .bg-swatches {
+    grid-template-columns: repeat(6, 28px);
+    gap: 8px;
+  }
+}
+
+.bg-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 36px);
+  gap: 10px;
+}
+
+.swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: bold;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.swatch:hover {
+  transform: translateY(-2px);
+}
+
+.swatch.is-active {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.toolbar-anchor {
+  z-index: 10000;
 }

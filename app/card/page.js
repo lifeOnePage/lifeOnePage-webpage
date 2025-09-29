@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from "react";
 import "./cardPage.css";
 import FloatingToolbar from "../components/FloatingToolBar-Card";
 
+//초기 지정 변수 모음 (타임라인, 달, 팔레트색상)
+
 const INITIAL_TIMELINE = [
   {
     id: "PLAY",
@@ -45,13 +47,6 @@ const INITIAL_TIMELINE = [
     desc: "새로운 교실, 새로운 친구들. 기대와 설렘 속에서 중학교 생활을 시작했다.",
   },
 ];
-
-// LP 휠 회전
-const START_ANGLE = 0;
-const SWEEP_ANGLE = 100;
-const RADIUS = 280;
-const STEP = 3;
-
 const MONTHS = [
   "JAN",
   "FEB",
@@ -66,12 +61,23 @@ const MONTHS = [
   "NOV",
   "DEC",
 ];
+const BG_THEME_PALETTE = [
+  { name: "Coal", bg: "#121212", text: "#F2F2F2" },
+  { name: "Rose", bg: "#aa747dff", text: "#ffffffff" },
+  { name: "Olive", bg: "#7B7341", text: "#f2f2f2ff" },
+  { name: "Warm Gray", bg: "#746F6F", text: "#F2F2F2" },
+  { name: "Blue", bg: "#6C8E98", text: "#F2F2F2" },
+  { name: "BlackPink", bg: "#121212ff", text: "#aa747dff" },
+  { name: "Parchment", bg: "#F5F1E6", text: "#111111" },
+  { name: "Cloud", bg: "#ECECEC", text: "#111111" },
+];
+
+//년도분리
 const toMonthDay = (str) => {
   if (!str) return "";
   const [y, m, d] = str.split(".").map((s) => parseInt(s, 10));
   return `${MONTHS[m - 1]} ${String(d).padStart(2, "0")}`;
 };
-
 const yyyymmddToISO = (str) => {
   if (!str) return "";
   const [y, m, d] = str.split(".").map((s) => s.padStart(2, "0"));
@@ -82,6 +88,11 @@ const isoToYyyymmdd = (iso) => {
   const [y, m, d] = iso.split("-");
   return `${y}.${m}.${d}`;
 };
+const getYear = (str) => {
+  if (!str) return "";
+  const [y] = str.split(".");
+  return y + " " || "";
+};
 
 export default function LifeRecord() {
   const [timeline, setTimeline] = useState(INITIAL_TIMELINE);
@@ -90,10 +101,45 @@ export default function LifeRecord() {
   const [isEditing, setIsEditing] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [isUpdated, setIsUpdated] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
 
+  const [addOpen, setAddOpen] = useState(false);
+  const DEFAULT_THEME = BG_THEME_PALETTE[0];
+  const [theme, setTheme] = useState(DEFAULT_THEME);
+
+  // LP 휠 회전
+  const START_ANGLE = 0;
+  const SWEEP_ANGLE = 100; //mobile:160
+  const RADIUS = 280; //mobile:120
+  const STEP = 3;
   const wheelTimer = useRef(null);
   const scrollSound = useRef(null);
+  const touchStartX = useRef(0);
+  const touchMoveX = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchMoveX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diffX = touchMoveX.current - touchStartX.current;
+    if (Math.abs(diffX) < 20) return;
+
+    const dir = diffX > 0 ? -1 : 1;
+    const next = rotation + dir * STEP * 10;
+    setRotation(next);
+
+    if (scrollSound.current) {
+      scrollSound.current.currentTime = 0;
+      scrollSound.current.play();
+    }
+
+    if (wheelTimer.current) clearTimeout(wheelTimer.current);
+    wheelTimer.current = setTimeout(() => snapToClosest(next), 150);
+  };
 
   useEffect(() => {
     scrollSound.current = new Audio("/sounds/scroll.m4a");
@@ -104,19 +150,19 @@ export default function LifeRecord() {
     return START_ANGLE + SWEEP_ANGLE * t;
   };
 
-  const snapToClosest = (rot) => {
+  const snapToClosest = (rot, anchor = getAnchor()) => {
     let best = 0,
       bestDiff = Infinity,
       snapped = rot;
     timeline.forEach((_, i) => {
-      const base = angleForIndex(i);
-      const cur = (base + rot) % 360;
-      const curNorm = (cur + 360) % 360;
-      const diff = Math.min(curNorm, 360 - curNorm);
+      const base = angleForIndex(i); // i번째 기준각
+      const cur = norm360(base + rot); // 현재 화면상의 각
+      const diff = angDist(cur, anchor); // 앵커와의 거리
       if (diff < bestDiff) {
         bestDiff = diff;
         best = i;
-        snapped = rot - cur;
+        // cur을 anchor로 정렬되게 rotation 보정
+        snapped = rot + (anchor - cur);
       }
     });
     setRotation(snapped);
@@ -149,7 +195,7 @@ export default function LifeRecord() {
         item.cover = value;
         item.isImageUpdated = true;
       } else if (field === "date") {
-        item.date = value; // "YYYY.MM.DD"
+        item.date = value;
       } else {
         item[field] = value;
       }
@@ -163,13 +209,15 @@ export default function LifeRecord() {
   const handleImageChange = (file) => {
     if (!file) return;
     const url = URL.createObjectURL(file);
-    setField("image", url);
+    if (file.type?.startsWith("video/")) {
+      setField("video", url);
+    } else {
+      setField("image", url);
+    }
     setIsUpdated(true);
   };
 
-  const handleSave = () => {
-    // TODO: 서버/파이어베이스 저장 로직 연결
-  };
+  const handleSave = () => {};
   const handleCancel = () => {
     setTimeline(INITIAL_TIMELINE);
     setIsEditing(false);
@@ -178,32 +226,94 @@ export default function LifeRecord() {
   const handleTogglePreview = () => setIsPreview((p) => !p);
   const showEditUI = isEditing && !isPreview;
 
+  //LP 모바일 버전
+  const norm360 = (a) => ((a % 360) + 360) % 360;
+  const angDist = (a, b) => {
+    const d = Math.abs(norm360(a) - norm360(b));
+    return Math.min(d, 360 - d);
+  };
+  const useIsMobile = () => {
+    const [m, setM] = React.useState(false);
+    useEffect(() => {
+      const mq = window.matchMedia("(max-width: 768px)");
+      const onChange = () => setM(mq.matches);
+      onChange();
+      mq.addEventListener?.("change", onChange);
+      return () => mq.removeEventListener?.("change", onChange);
+    }, []);
+    return m;
+  };
+  const isMobile = useIsMobile();
+  const getAnchor = () => (isMobile ? 90 : 0); //모바일이면-> 남쪽(90)기준, 데탑이면-> 오른쪽(0) 기준
+
   return (
-    <main className="lr-page" data-editing={isEditing ? "true" : "false"}>
+    <main
+      className="lr-page"
+      data-editing={isEditing ? "true" : "false"}
+      style={{ ["--bg"]: theme.bg, ["--text"]: theme.text }}
+    >
       <div className="lr-grid">
         <section className="lr-left">
           <h1 className="lr-title">Life- Record</h1>
           <p className="lr-sub">
-            <b>최아텍</b>님의 포스트 카드입니다.
+            <b>최아텍</b>님의 라이프 레코드입니다.
             <br />
             “작은 장면을 모아 긴 기억을 만듭니다”
           </p>
+          {/* ===== 편집 모드에서만 노출: 배경 색상 패널 ===== */}
+          {isEditing && (
+            <div className="bg-panel">
+              <div className="bg-panel-head">
+                <span className="bg-panel-title">배경 테마</span>
+                <span className="bg-panel-hint">클릭 즉시 적용</span>
+              </div>
+
+              <div className="bg-swatches">
+                {BG_THEME_PALETTE.map((t) => {
+                  const active = theme.bg === t.bg && theme.text === t.text;
+                  return (
+                    <button
+                      key={t.name}
+                      type="button"
+                      className={`swatch ${active ? "is-active" : ""}`}
+                      style={{ background: t.bg, color: t.text }}
+                      title={`${t.name} (${t.bg})`}
+                      onClick={() => setTheme(t)}
+                    >
+                      A
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="lr-center">
           <article className={`lr-card ${isEditing ? "lr-card--editing" : ""}`}>
             <div key={activeIdx} className="card-fade">
               <div className="lr-card-media">
-                <img
-                  src={
-                    activeItem.kind === "year"
-                      ? activeItem.cover ?? "/images/timeline/1.jpeg"
-                      : activeItem.cover ?? "/images/timeline/1.jpeg"
-                  }
-                  alt="cover"
-                  className="lr-cover"
-                />
-
+                {activeItem.video ? (
+                  <video
+                    className="lr-cover"
+                    src={activeItem.video}
+                    controls
+                    playsInline
+                    muted
+                    autoPlay
+                    loop
+                  />
+                ) : (
+                  <img
+                    src={
+                      activeItem.kind === "year"
+                        ? activeItem.cover ?? "/images/timeline/1.jpeg"
+                        : activeItem.cover ?? "/images/timeline/1.jpeg"
+                    }
+                    alt="cover"
+                    className="lr-cover"
+                  />
+                )}
                 {activeItem.kind === "main" && (
                   <div className="lr-playlist">
                     <h4>PLAYLIST</h4>
@@ -228,7 +338,7 @@ export default function LifeRecord() {
                     이미지 변경
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,video/*"
                       onChange={(e) => handleImageChange(e.target.files?.[0])}
                       hidden
                     />
@@ -248,7 +358,13 @@ export default function LifeRecord() {
                           : "최아텍"}
                       </div>
                       <div className="lr-date">
-                        <div>{toMonthDay(activeItem.date)}</div>
+                        {/* <div className="lr-date-year">
+                          {getYear(activeItem.date)}
+                        </div> */}
+                        <div>
+                          {getYear(activeItem.date)}
+                          {toMonthDay(activeItem.date)}
+                        </div>
                         <div>{activeItem.location}</div>
                       </div>
                     </div>
@@ -337,7 +453,13 @@ export default function LifeRecord() {
           </article>
         </section>
 
-        <aside className="lr-right" onWheel={handleWheel}>
+        <aside
+          className="lr-right"
+          onWheel={handleWheel}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className="lp-wrap">
             <img
               className="lp-disc"
@@ -350,12 +472,15 @@ export default function LifeRecord() {
                 const current = angleForIndex(i) + rotation;
                 const handleClick = () => {
                   const base = angleForIndex(i);
-                  const cur = (base + rotation) % 360;
-                  const snapped = rotation - cur;
+                  const cur = norm360(base + rotation);
+                  const anchor = getAnchor();
+                  const snapped = rotation + (anchor - cur);
                   setRotation(snapped);
                   setActiveIdx(i);
-                  scrollSound.current.currentTime = 0;
-                  scrollSound.current.play();
+                  if (scrollSound.current) {
+                    scrollSound.current.currentTime = 0;
+                    scrollSound.current.play();
+                  }
                 };
                 return (
                   <span
@@ -380,27 +505,38 @@ export default function LifeRecord() {
         </aside>
       </div>
 
-      {!isEditing ? (
-        <button
-          className="login-btn-fixed"
-          onClick={() => setIsEditing(true)}
-          aria-pressed="false"
-          title="로그인하고 편집 모드로 전환"
-        >
-          로그인
-        </button>
-      ) : (
-        <div className="toolbar-anchor" role="region" aria-label="편집 도구">
-          <FloatingToolbar
-            onSave={handleSave}
-            onLogout={() => setIsEditing(false)}
-            isPreview={isPreview}
-            setIsPreview={setIsPreview}
-            isUpdated={isUpdated}
-            onAddTimeline={() => setAddOpen(true)}
-          />
-        </div>
-      )}
+      <footer className="footer">
+        {!isEditing && (
+          <>
+            <div className="footer-logo">The Life Gallery</div>
+            <div className="footer-copyright">
+              Copyright 2025. Creative Computing Group. All rights reserved.
+            </div>
+          </>
+        )}
+
+        {!isEditing ? (
+          <button
+            className="login-btn-fixed"
+            onClick={() => setIsEditing(true)}
+            aria-pressed="false"
+            title="로그인하고 편집 모드로 전환"
+          >
+            로그인
+          </button>
+        ) : (
+          <div className="toolbar-anchor" role="region" aria-label="편집 도구">
+            <FloatingToolbar
+              onSave={handleSave}
+              onLogout={() => setIsEditing(false)}
+              isPreview={isPreview}
+              setIsPreview={setIsPreview}
+              isUpdated={isUpdated}
+              onAddTimeline={() => setAddOpen(true)}
+            />
+          </div>
+        )}
+      </footer>
     </main>
   );
 }
