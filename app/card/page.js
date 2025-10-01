@@ -1,10 +1,13 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import "./cardPage.css";
+import "./cardPage-mobile.css";
 import FloatingToolbar from "../components/FloatingToolBar-Card";
 import AddTimelineModal from "./AddTimelineModal";
 
-//초기 지정 변수 모음 (타임라인, 달, 팔레트색상)
+/* =========================
+   초기 데이터 / 상수
+   ========================= */
 const INITIAL_TIMELINE = [
   {
     id: "PLAY",
@@ -32,7 +35,7 @@ const INITIAL_TIMELINE = [
     id: 2008,
     kind: "year",
     label: "2008",
-    event: "햇살 가득한 \n첫 소풍의 기억",
+    event: "소풍",
     date: "2008.05.12",
     location: "어린이대공원",
     cover: "/images/timeline/3.jpeg",
@@ -65,7 +68,6 @@ const MONTHS = [
   "NOV",
   "DEC",
 ];
-//테마 팔레트
 const BG_THEME_PALETTE = [
   { name: "Coal", bg: "#121212", text: "#F2F2F2" },
   { name: "Rose", bg: "#aa747dff", text: "#ffffffff" },
@@ -77,7 +79,9 @@ const BG_THEME_PALETTE = [
   { name: "Cloud", bg: "#ECECEC", text: "#111111" },
 ];
 
-//년도 분리 알고리즘
+/* =========================
+   날짜 포맷 유틸
+   ========================= */
 const toMonthDay = (str) => {
   if (!str) return "";
   const [y, m, d] = str.split(".").map((s) => parseInt(s, 10));
@@ -99,61 +103,86 @@ const getYear = (str) => {
   return y + " " || "";
 };
 
+/* =========================
+   Geometry 유틸
+   ========================= */
+const norm360 = (a) => ((a % 360) + 360) % 360; // 0~360
+const wrapTo180 = (d) => ((d + 540) % 360) - 180; // -180~+180
+const angDist = (a, b) => {
+  const d = Math.abs(norm360(a) - norm360(b));
+  return Math.min(d, 360 - d);
+};
+
+/* =========================
+   모바일 감지 훅
+   ========================= */
+function useIsMobile(bp = 768) {
+  const [m, setM] = React.useState(
+    typeof window !== "undefined" ? window.innerWidth <= bp : false
+  );
+  useEffect(() => {
+    const on = () => setM(window.innerWidth <= bp);
+    window.addEventListener("resize", on);
+    on();
+    return () => window.removeEventListener("resize", on);
+  }, [bp]);
+  return m;
+}
+
 export default function LifeRecord() {
   const [timeline, setTimeline] = useState(INITIAL_TIMELINE);
-  const [rotation, setRotation] = useState(0); //LP판 회전 정도 지정
+  const [rotation, setRotation] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [isEditing, setIsEditing] = useState(false); //편집 중인지(로그인 상태인지) 확인용
-  const [isPreview, setIsPreview] = useState(false); //미리보기 중인지(로그인상태이면서, floating bar의 미리보기 버튼을 클릭한 상태)
-  const [isUpdated, setIsUpdated] = useState(false); //저장중인지(업데이트 중인지)
-  const [addOpen, setAddOpen] = useState(false); // timeline 추가 modal이 열려있는 상태인지
+  const [isEditing, setIsEditing] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
+  const [isUpdated, setIsUpdated] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
-  //테마 설정
+  // 테마
   const DEFAULT_THEME = BG_THEME_PALETTE[0];
   const [theme, setTheme] = useState(DEFAULT_THEME);
 
-  // LP 휠 회전
-  const START_ANGLE = 0;
-  const SWEEP_ANGLE = 100; //mobile:160
-  const RADIUS = 280; //mobile:120
-  const STEP = 3;
+  // 사운드/입력
   const wheelTimer = useRef(null);
   const scrollSound = useRef(null);
   const touchStartX = useRef(0);
   const touchMoveX = useRef(0);
 
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchMove = (e) => {
-    touchMoveX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    const diffX = touchMoveX.current - touchStartX.current;
-    if (Math.abs(diffX) < 20) return;
-
-    const dir = diffX > 0 ? -1 : 1;
-    const next = rotation + dir * STEP * 10;
-    setRotation(next);
-
-    if (scrollSound.current) {
-      scrollSound.current.currentTime = 0;
-      scrollSound.current.play();
-    }
-
-    if (wheelTimer.current) clearTimeout(wheelTimer.current);
-    wheelTimer.current = setTimeout(() => snapToClosest(next), 150);
-  };
-
-  useEffect(() => {
-    scrollSound.current = new Audio("/sounds/scroll.m4a");
-  }, []);
+  /* =========================
+     Desktop/Mobile 배치 설정
+     ========================= */
+  const isMobile = useIsMobile();
+  const DESKTOP = { START: 0, SWEEP: 120, RADIUS: 280, ANCHOR: 0 };
+  const MOBILE = { START: 110, SWEEP: 180, RADIUS: 140, ANCHOR: 110 };
+  const CFG = isMobile ? MOBILE : DESKTOP;
+  const RADIUS = CFG.RADIUS;
+  const getAnchor = () => CFG.ANCHOR;
 
   const angleForIndex = (i) => {
-    const t = timeline.length === 1 ? 0 : i / (timeline.length - 1);
-    return START_ANGLE + SWEEP_ANGLE * t;
+    const n = timeline.length;
+    if (n <= 0) return CFG.START;
+    const step = CFG.SWEEP / n;
+    return CFG.START + step * (i + 0.5);
+  };
+
+  const didInitRef = useRef(false);
+  useEffect(() => {
+    const base = angleForIndex(activeIdx);
+    const cur = norm360(base + rotation);
+    const anchor = getAnchor();
+    const delta = ((anchor - cur + 540) % 360) - 180;
+    if (Math.abs(delta) > 0.5) {
+      setRotation((r) => r + delta);
+    }
+    didInitRef.current = true;
+  }, [isMobile, timeline.length]);
+
+  const snapToIndex = (i, anchor = getAnchor()) => {
+    const base = angleForIndex(i);
+    const cur = norm360(base + rotation);
+    const delta = wrapTo180(anchor - cur);
+    setRotation(rotation + delta);
+    setActiveIdx(i);
   };
 
   const snapToClosest = (rot, anchor = getAnchor()) => {
@@ -161,20 +190,22 @@ export default function LifeRecord() {
       bestDiff = Infinity,
       snapped = rot;
     timeline.forEach((_, i) => {
-      const base = angleForIndex(i); // i번째 기준각
-      const cur = norm360(base + rot); // 현재 화면상의 각
-      const diff = angDist(cur, anchor); // 앵커와의 거리
+      const cur = norm360(angleForIndex(i) + rot);
+      const diff = angDist(cur, anchor);
       if (diff < bestDiff) {
         bestDiff = diff;
         best = i;
-        // cur을 anchor로 정렬되게 rotation 보정
-        snapped = rot + (anchor - cur);
+        snapped = rot + wrapTo180(anchor - cur);
       }
     });
     setRotation(snapped);
     setActiveIdx(best);
   };
 
+  /* =========================
+     입력(휠/터치)
+     ========================= */
+  const STEP = 3;
   const handleWheel = (e) => {
     const dir = e.deltaY > 0 ? -1 : 1;
     const next = rotation + dir * STEP;
@@ -187,8 +218,43 @@ export default function LifeRecord() {
     wheelTimer.current = setTimeout(() => snapToClosest(next), 140);
   };
 
+  const handleTouchStart = (e) => (touchStartX.current = e.touches[0].clientX);
+  const handleTouchMove = (e) => (touchMoveX.current = e.touches[0].clientX);
+  const handleTouchEnd = () => {
+    const dx = touchMoveX.current - touchStartX.current;
+    if (Math.abs(dx) < 20) return;
+
+    const left = dx < -20;
+    const right = dx > 20;
+
+    let target = activeIdx;
+
+    if (isMobile) {
+      if (left) target = Math.max(0, activeIdx - 1);
+      if (right) target = Math.min(timeline.length - 1, activeIdx + 1);
+    } else {
+      if (left) target = Math.max(0, activeIdx - 1);
+      if (right) target = Math.min(timeline.length - 1, activeIdx + 1);
+    }
+
+    if (target !== activeIdx) {
+      snapToIndex(target);
+      if (scrollSound.current) {
+        scrollSound.current.currentTime = 0;
+        scrollSound.current.play();
+      }
+    }
+  };
+
+  useEffect(() => {
+    scrollSound.current = new Audio("/sounds/scroll.m4a");
+  }, []);
+
   const activeItem = timeline[activeIdx];
 
+  /* =========================
+     편집/저장/필드 업데이트
+     ========================= */
   const setField = (field, value) => {
     setTimeline((prev) => {
       const next = [...prev];
@@ -205,7 +271,6 @@ export default function LifeRecord() {
       } else {
         item[field] = value;
       }
-
       next[activeIdx] = item;
       return next;
     });
@@ -232,28 +297,9 @@ export default function LifeRecord() {
   const handleTogglePreview = () => setIsPreview((p) => !p);
   const showEditUI = isEditing && !isPreview;
 
-  //LP 모바일 버전
-  const norm360 = (a) => ((a % 360) + 360) % 360;
-  const angDist = (a, b) => {
-    const d = Math.abs(norm360(a) - norm360(b));
-    return Math.min(d, 360 - d);
-  };
-  const useIsMobile = () => {
-    const [m, setM] = React.useState(false);
-    useEffect(() => {
-      const mq = window.matchMedia("(max-width: 768px)");
-      const onChange = () => setM(mq.matches);
-      onChange();
-      mq.addEventListener?.("change", onChange);
-      return () => mq.removeEventListener?.("change", onChange);
-    }, []);
-    return m;
-  };
-  const isMobile = useIsMobile();
-  const getAnchor = () => (isMobile ? 90 : 0); //모바일이면-> 남쪽(90)기준, 데탑이면-> 오른쪽(0) 기준
-
-  //================================= timeline 관리 =================================
-  // 하이라이트/삭제 함수
+  /* =========================
+     하이라이트/삭제
+     ========================= */
   const toggleHighlight = (id) => {
     setTimeline((prev) =>
       prev.map((item) =>
@@ -263,9 +309,7 @@ export default function LifeRecord() {
     setIsUpdated(true);
   };
   const handleDeleteActive = () => {
-    // 메인 카드 또는 아이템이 1개뿐이면 삭제 금지
     if (activeItem?.kind === "main" || timeline.length <= 1) return;
-
     setTimeline((prev) => {
       const next = prev.filter((_, i) => i !== activeIdx);
       const newIdx = Math.max(0, Math.min(activeIdx, next.length - 1));
@@ -275,18 +319,15 @@ export default function LifeRecord() {
     setIsUpdated(true);
   };
 
-  // 타임라인 새로 생성 시 샤용되는 함수
+  /* =========================
+     새 타임라인 생성 후 즉시 이동
+     ========================= */
   const handleCreateTimeline = (newItem) => {
-    setTimeline((prev) => [...prev, newItem]);
-
-    requestAnimationFrame(() => {
-      const nextIndex = timeline.length; // 방금 push한 아이템의 인덱스로 이동하는 부분
-      const base = angleForIndex(nextIndex);
-      const cur = norm360(base + rotation);
-      const anchor = getAnchor();
-      const snapped = rotation + (anchor - cur);
-      setRotation(snapped);
-      setActiveIdx(nextIndex);
+    setTimeline((prev) => {
+      const next = [...prev, newItem];
+      const idx = next.length - 1;
+      requestAnimationFrame(() => snapToIndex(idx));
+      return next;
     });
   };
 
@@ -297,6 +338,7 @@ export default function LifeRecord() {
       style={{ ["--bg"]: theme.bg, ["--text"]: theme.text }}
     >
       <div className="lr-grid">
+        {/* ========== 좌측: 타이틀/설정 ========== */}
         <section className="lr-left">
           <h1 className="lr-title">Life- Record</h1>
           <p className="lr-sub">
@@ -304,7 +346,7 @@ export default function LifeRecord() {
             <br />
             “작은 장면을 모아 긴 기억을 만듭니다”
           </p>
-          {/* ===== 편집 모드에서만 노출: 배경 색상 패널 ===== */}
+
           {isEditing && (
             <div className="bg-panel">
               <div className="bg-panel-head">
@@ -333,6 +375,7 @@ export default function LifeRecord() {
           )}
         </section>
 
+        {/* ========== 중앙: 카드 영역 ========== */}
         <section className="lr-center">
           <article
             className={`lr-card ${isEditing ? "lr-card--editing" : ""} ${
@@ -353,17 +396,12 @@ export default function LifeRecord() {
                   />
                 ) : (
                   <img
-                    src={
-                      activeItem.kind === "year"
-                        ? activeItem.cover ?? "/images/timeline/1.jpeg"
-                        : activeItem.cover ?? "/images/timeline/1.jpeg"
-                    }
+                    src={activeItem.cover ?? "/images/timeline/1.jpeg"}
                     alt="cover"
                     className="lr-cover"
                   />
                 )}
 
-                {/* ===== 이미지 업로드 (편집 모드에서만 보임) ===== */}
                 {isEditing && (
                   <label className="edit-image-btn">
                     이미지 변경
@@ -375,7 +413,7 @@ export default function LifeRecord() {
                     />
                   </label>
                 )}
-                {/* ===== 편집 아이콘(별/삭제) : 편집 모드에서만 ===== */}
+
                 {isEditing && activeItem && (
                   <div className="media-actions" aria-label="미디어 액션">
                     {activeItem.kind !== "main" && (
@@ -392,7 +430,6 @@ export default function LifeRecord() {
                         aria-pressed={!!activeItem.isHighlight}
                         onClick={() => toggleHighlight(activeItem.id)}
                       >
-                        {/* Star Icon (SVG) */}
                         <svg
                           viewBox="0 0 24 24"
                           width="22"
@@ -408,8 +445,6 @@ export default function LifeRecord() {
                         </svg>
                       </button>
                     )}
-
-                    {/* 삭제: 메인은 삭제 금지 */}
                     {activeItem.kind !== "main" && (
                       <button
                         type="button"
@@ -417,7 +452,6 @@ export default function LifeRecord() {
                         title="삭제"
                         onClick={handleDeleteActive}
                       >
-                        {/* Trash Icon (SVG) */}
                         <svg
                           viewBox="0 0 24 24"
                           width="22"
@@ -438,7 +472,7 @@ export default function LifeRecord() {
                 )}
               </div>
 
-              {/* ===== 설명/메타 + 편집 폼 ===== */}
+              {/* 설명/메타 */}
               <div className="lr-card-desc">
                 {!isEditing ? (
                   <>
@@ -451,11 +485,9 @@ export default function LifeRecord() {
                             {toMonthDay(activeItem.date)}
                           </div>
                         </div>
-
                         <p>{activeItem.desc}</p>
                       </>
                     ) : (
-                      // === 일반 이벤트 ===
                       <>
                         <p>{activeItem.desc}</p>
                         <div className="lr-meta">
@@ -490,9 +522,7 @@ export default function LifeRecord() {
                             : activeItem.title ?? ""
                         }
                         onChange={(e) => setField("title", e.target.value)}
-                        placeholder={
-                          "이 기록의 대표 제목을 입력하세요 (예: 나의 첫 전시회)"
-                        }
+                        placeholder="이 기록의 대표 제목을 입력하세요 (예: 나의 첫 전시회)"
                       />
                     </div>
                     <div className="edit-date-location">
@@ -506,7 +536,6 @@ export default function LifeRecord() {
                           }
                         />
                       </div>
-
                       <div className="edit-row">
                         <label>Location</label>
                         <input
@@ -536,23 +565,11 @@ export default function LifeRecord() {
                         {activeItem.desc?.length ?? 0}/150
                       </span>
                     </div>
-                    {/* 
-                    <div className="edit-actions">
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={handleCancel}
-                      >
-                        취소
-                      </button>
-                      <button type="submit" className="btn-primary">
-                        저장
-                      </button>
-                    </div> */}
                   </form>
                 )}
               </div>
-              {/* ===== 메인 카드: 하이라이트 그리드(최대 6개) ===== */}
+
+              {/* 메인카드 하이라이트 */}
               {activeItem.kind === "main" && (
                 <div className="lr-highlight-grid" role="list">
                   {timeline
@@ -568,16 +585,8 @@ export default function LifeRecord() {
                           "하이라이트"
                         }
                         onClick={() => {
-                          // 썸네일 클릭 시 해당 아이템으로 점프
                           const i = timeline.findIndex((x) => x.id === it.id);
-                          if (i >= 0) {
-                            const base = angleForIndex(i);
-                            const cur = norm360(base + rotation);
-                            const anchor = getAnchor();
-                            const snapped = rotation + (anchor - cur);
-                            setRotation(snapped);
-                            setActiveIdx(i);
-                          }
+                          if (i >= 0) snapToIndex(i);
                         }}
                       >
                         <img
@@ -592,7 +601,6 @@ export default function LifeRecord() {
                         </span>
                       </div>
                     ))}
-                  {/* 비어 있으면 가이드 텍스트 */}
                   {isEditing &&
                     timeline.filter((it) => it.isHighlight).length === 0 && (
                       <div className="lr-highlight-empty">
@@ -605,6 +613,7 @@ export default function LifeRecord() {
           </article>
         </section>
 
+        {/* ========== 우측: LP + 연도 원 ========== */}
         <aside
           className="lr-right"
           onWheel={handleWheel}
@@ -621,27 +630,15 @@ export default function LifeRecord() {
             />
             <div className="year-circle">
               {timeline.map((item, i) => {
-                const current = angleForIndex(i) + rotation;
-                const handleClick = () => {
-                  const base = angleForIndex(i);
-                  const cur = norm360(base + rotation);
-                  const anchor = getAnchor();
-                  const snapped = rotation + (anchor - cur);
-                  setRotation(snapped);
-                  setActiveIdx(i);
-                  if (scrollSound.current) {
-                    scrollSound.current.currentTime = 0;
-                    scrollSound.current.play();
-                  }
-                };
+                const phi = angleForIndex(i) + rotation;
                 return (
                   <span
                     key={item.id}
                     className={`year-item ${i === activeIdx ? "active" : ""}`}
                     style={{
-                      transform: `rotate(${current}deg) translate(${RADIUS}px) rotate(${-current}deg)`,
+                      transform: `rotate(${phi}deg) translate(${RADIUS}px) rotate(${-phi}deg)`,
                     }}
-                    onClick={handleClick}
+                    onClick={() => snapToIndex(i)}
                   >
                     {item.label}
                     {item.kind === "main" ? (
@@ -657,6 +654,7 @@ export default function LifeRecord() {
         </aside>
       </div>
 
+      {/* ========== Footer / Floating Bar ========== */}
       <footer className="footer">
         {!isEditing && (
           <>
@@ -689,6 +687,8 @@ export default function LifeRecord() {
           </div>
         )}
       </footer>
+
+      {/* ========== 새 타임라인 모달 ========== */}
       <AddTimelineModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
