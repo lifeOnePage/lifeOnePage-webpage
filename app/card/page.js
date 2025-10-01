@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./cardPage.css";
 import FloatingToolbar from "../components/FloatingToolBar-Card";
+import AddTimelineModal from "./AddTimelineModal";
 
 //초기 지정 변수 모음 (타임라인, 달, 팔레트색상)
 const INITIAL_TIMELINE = [
@@ -105,6 +106,7 @@ export default function LifeRecord() {
   const [isEditing, setIsEditing] = useState(false); //편집 중인지(로그인 상태인지) 확인용
   const [isPreview, setIsPreview] = useState(false); //미리보기 중인지(로그인상태이면서, floating bar의 미리보기 버튼을 클릭한 상태)
   const [isUpdated, setIsUpdated] = useState(false); //저장중인지(업데이트 중인지)
+  const [addOpen, setAddOpen] = useState(false); // timeline 추가 modal이 열려있는 상태인지
 
   //테마 설정
   const DEFAULT_THEME = BG_THEME_PALETTE[0];
@@ -271,6 +273,21 @@ export default function LifeRecord() {
       return next;
     });
     setIsUpdated(true);
+  };
+
+  // 타임라인 새로 생성 시 샤용되는 함수
+  const handleCreateTimeline = (newItem) => {
+    setTimeline((prev) => [...prev, newItem]);
+
+    requestAnimationFrame(() => {
+      const nextIndex = timeline.length; // 방금 push한 아이템의 인덱스로 이동하는 부분
+      const base = angleForIndex(nextIndex);
+      const cur = norm360(base + rotation);
+      const anchor = getAnchor();
+      const snapped = rotation + (anchor - cur);
+      setRotation(snapped);
+      setActiveIdx(nextIndex);
+    });
   };
 
   return (
@@ -474,7 +491,7 @@ export default function LifeRecord() {
                         }
                         onChange={(e) => setField("title", e.target.value)}
                         placeholder={
-                          activeItem.kind === "year" ? "이벤트명" : "제목"
+                          "이 기록의 대표 제목을 입력하세요 (예: 나의 첫 전시회)"
                         }
                       />
                     </div>
@@ -508,7 +525,7 @@ export default function LifeRecord() {
                         maxLength={150}
                         value={activeItem.desc ?? ""}
                         onChange={(e) => setField("desc", e.target.value)}
-                        placeholder="설명(최대 150자)"
+                        placeholder="사진에 담긴 순간의 의미나 기억을 기록해 보세요 (최대 150자)"
                       />
                       <span
                         className={`char-count ${
@@ -672,6 +689,11 @@ export default function LifeRecord() {
           </div>
         )}
       </footer>
+      <AddTimelineModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onCreate={handleCreateTimeline}
+      />
     </main>
   );
 }
