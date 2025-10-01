@@ -183,6 +183,21 @@ body,
   justify-content: space-between;
 }
 
+.lr-meta--mainTop {
+  border-top: none;
+  padding-top: 0.3rem;
+}
+.lr-meta--mainTop p {
+  height: 100%;
+}
+
+.lr-card--main .lr-card-desc p {
+  height: 3.2rem;
+  min-height: 0;
+  margin-bottom: 10px;
+  border-bottom: 1.2px solid #121212;
+}
+
 .lr-name {
   font-family: "Helvetica Neue LT Std";
   font-size: 2.3rem;
@@ -561,7 +576,7 @@ body,
 /* 이미지 변경 버튼 */
 .edit-image-btn {
   position: absolute;
-  top: 12px;
+  bottom: 12px;
   right: 12px;
   background: rgba(18, 18, 18, 0.75);
   color: #f2f2f2;
@@ -808,4 +823,148 @@ body,
 
 .toolbar-anchor {
   z-index: 10000;
+}
+
+/* ===== 편집 아이콘(별/삭제) 오버레이 ===== */
+.media-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  grid-auto-flow: row;
+  gap: 10px;
+  z-index: 5;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f5f5f5;
+  border-radius: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms;
+}
+.icon-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.5);
+}
+.icon-btn.is-on {
+  background: rgba(255, 215, 0, 0.25);
+  border-color: #ffd700;
+  color: #ffd700;
+}
+
+/* ===== 메인카드 하단 하이라이트 그리드 ===== */
+.lr-highlight-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.lr-highlight-item {
+  width: 6rem;
+  height: 3rem;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #000;
+  cursor: pointer;
+}
+
+.lr-highlight-empty {
+  grid-column: 1 / -1;
+  padding: 12px;
+  border: 1px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  background: #f7f7f7;
+  color: #555;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* 모바일 최적화 */
+@media (max-width: 600px) {
+  .lr-highlight-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .lr-highlight-item img {
+    height: 76px;
+  }
+}
+
+/* ===== 메인카드 하이라이트 그리드: 3x2 고정 배치 ===== */
+.lr-highlight-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-auto-rows: 92px;
+  gap: 12px;
+  justify-content: start !important;
+  align-content: start;
+  margin-top: 12px;
+}
+
+.lr-highlight-item {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  cursor: pointer;
+}
+
+.lr-highlight-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 1;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+.lr-highlight-item:hover img {
+  transform: scale(1.02);
+}
+
+.lr-highlight-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.lr-highlight-title {
+  width: 100%;
+  position: absolute;
+  padding: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 20px);
+  padding: 0 8px;
+  text-align: center;
+  color: #fff;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  overflow: visible;
+  z-index: 1;
+
+  font-family: "Pretendard Variable";
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 300;
+  line-height: 130%;
+  letter-spacing: -0.0375rem;
+}
+
+@media (max-width: 600px) {
+  .lr-highlight-grid {
+    grid-template-columns: repeat(2, 1fr); /* 모바일 2열 */
+    grid-auto-rows: 80px;
+    gap: 8px;
+  }
 }

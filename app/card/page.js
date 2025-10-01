@@ -12,8 +12,9 @@ const INITIAL_TIMELINE = [
     title: "최아텍의 이야기",
     date: "2001.11.12",
     location: "서울 마포구",
-    desc: "도시의 작은 변화를 관찰하며 기록하는 인터랙티브 미디어 아티스트이다. 일상의 경험을 데이터와 이야기로 엮어 사람들이 스스로의 시간을 아카이브하도록 돕는다. 걷기와 사진을 좋아하며, 따뜻한 연결을 만드는 작품을 목표로 한다.",
+    desc: "도시의 작은 변화를 관찰하며 기록하는 아티스트이다. 일상의 경험을 이야기로 엮어 사람들이 스스로의 시간을 아카이브하도록 돕는다.",
     cover: "/images/timeline/1.jpeg",
+    isHighlight: false,
   },
   {
     id: 2001,
@@ -24,6 +25,7 @@ const INITIAL_TIMELINE = [
     location: "서울 마포구",
     cover: "/images/timeline/2.jpeg",
     desc: "세상에 첫 발을 디딘 날. 가족들의 축복 속에서 태어났다. 작은 울음소리가 집안을 가득 채우자, 부모님과 가족들은 새로운 생명의 도착을 기뻐하며 서로의 손을 꼭 잡았다.",
+    isHighlight: false,
   },
   {
     id: 2008,
@@ -34,6 +36,7 @@ const INITIAL_TIMELINE = [
     location: "어린이대공원",
     cover: "/images/timeline/3.jpeg",
     desc: "초등학교 입학 후 처음으로 떠난 소풍이었다. 친구들과 함께 김밥을 나누어 먹고, 놀이기구를 타며 웃음소리가 끊이지 않았다.",
+    isHighlight: false,
   },
   {
     id: 2011,
@@ -44,6 +47,7 @@ const INITIAL_TIMELINE = [
     location: "서울",
     cover: "/images/timeline/4.jpeg",
     desc: "새로운 교실, 새로운 친구들. 기대와 설렘 속에서 중학교 생활을 시작했다.",
+    isHighlight: false,
   },
 ];
 const MONTHS = [
@@ -246,6 +250,29 @@ export default function LifeRecord() {
   const isMobile = useIsMobile();
   const getAnchor = () => (isMobile ? 90 : 0); //모바일이면-> 남쪽(90)기준, 데탑이면-> 오른쪽(0) 기준
 
+  //================================= timeline 관리 =================================
+  // 하이라이트/삭제 함수
+  const toggleHighlight = (id) => {
+    setTimeline((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, isHighlight: !item.isHighlight } : item
+      )
+    );
+    setIsUpdated(true);
+  };
+  const handleDeleteActive = () => {
+    // 메인 카드 또는 아이템이 1개뿐이면 삭제 금지
+    if (activeItem?.kind === "main" || timeline.length <= 1) return;
+
+    setTimeline((prev) => {
+      const next = prev.filter((_, i) => i !== activeIdx);
+      const newIdx = Math.max(0, Math.min(activeIdx, next.length - 1));
+      setActiveIdx(newIdx);
+      return next;
+    });
+    setIsUpdated(true);
+  };
+
   return (
     <main
       className="lr-page"
@@ -290,7 +317,11 @@ export default function LifeRecord() {
         </section>
 
         <section className="lr-center">
-          <article className={`lr-card ${isEditing ? "lr-card--editing" : ""}`}>
+          <article
+            className={`lr-card ${isEditing ? "lr-card--editing" : ""} ${
+              activeItem.kind === "main" ? "lr-card--main" : ""
+            }`}
+          >
             <div key={activeIdx} className="card-fade">
               <div className="lr-card-media">
                 {activeItem.video ? (
@@ -314,23 +345,6 @@ export default function LifeRecord() {
                     className="lr-cover"
                   />
                 )}
-                {activeItem.kind === "main" && (
-                  <div className="lr-playlist">
-                    <h4>PLAYLIST</h4>
-                    <div className="lr-playlist-contents">
-                      <ol>
-                        <li>01 햇살 가득한 첫 소풍의 기억</li>
-                        <li>02 설렘으로 시작한 새로운 여정</li>
-                        <li>03 봄비 아래의 첫 해외 모험</li>
-                      </ol>
-                      <ol>
-                        <li>04 다시 만난 작은 소풍의 기억</li>
-                        <li>05 생활로 스며든 새로운 여정</li>
-                        <li>06 별빛 아래의 첫 해외 모험</li>
-                      </ol>
-                    </div>
-                  </div>
-                )}
 
                 {/* ===== 이미지 업로드 (편집 모드에서만 보임) ===== */}
                 {isEditing && (
@@ -344,30 +358,102 @@ export default function LifeRecord() {
                     />
                   </label>
                 )}
+                {/* ===== 편집 아이콘(별/삭제) : 편집 모드에서만 ===== */}
+                {isEditing && activeItem && (
+                  <div className="media-actions" aria-label="미디어 액션">
+                    {activeItem.kind !== "main" && (
+                      <button
+                        type="button"
+                        className={`icon-btn ${
+                          activeItem.isHighlight ? "is-on" : ""
+                        }`}
+                        title={
+                          activeItem.isHighlight
+                            ? "하이라이트 해제"
+                            : "하이라이트로 지정"
+                        }
+                        aria-pressed={!!activeItem.isHighlight}
+                        onClick={() => toggleHighlight(activeItem.id)}
+                      >
+                        {/* Star Icon (SVG) */}
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="22"
+                          height="22"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M12 3.5l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17.9 6.6 20.3l1-6.1-4.4-4.3 6.1-.9L12 3.5z"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                          />
+                        </svg>
+                      </button>
+                    )}
+
+                    {/* 삭제: 메인은 삭제 금지 */}
+                    {activeItem.kind !== "main" && (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="삭제"
+                        onClick={handleDeleteActive}
+                      >
+                        {/* Trash Icon (SVG) */}
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="22"
+                          height="22"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 7h16M9 7V4h6v3m-7 4v8m4-8v8m4-8v8M6 7l1 14h10l1-14"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* ===== 설명/메타 + 편집 폼 ===== */}
               <div className="lr-card-desc">
                 {!isEditing ? (
                   <>
-                    <p>{activeItem.desc}</p>
-                    <div className="lr-meta">
-                      <div className="lr-name">
-                        {activeItem.kind === "year"
-                          ? activeItem.event
-                          : "최아텍"}
-                      </div>
-                      <div className="lr-date">
-                        {/* <div className="lr-date-year">
-                          {getYear(activeItem.date)}
-                        </div> */}
-                        <div>
-                          {getYear(activeItem.date)}
-                          {toMonthDay(activeItem.date)}
+                    {activeItem.kind === "main" ? (
+                      <>
+                        <div className="lr-meta lr-meta--mainTop">
+                          <div className="lr-name">최아텍</div>
+                          <div className="lr-date">
+                            {getYear(activeItem.date)}
+                            {toMonthDay(activeItem.date)}
+                          </div>
                         </div>
-                        <div>{activeItem.location}</div>
-                      </div>
-                    </div>
+
+                        <p>{activeItem.desc}</p>
+                      </>
+                    ) : (
+                      // === 일반 이벤트 ===
+                      <>
+                        <p>{activeItem.desc}</p>
+                        <div className="lr-meta">
+                          <div className="lr-name">
+                            {activeItem.kind === "year"
+                              ? activeItem.event
+                              : "최아텍"}
+                          </div>
+                          <div className="lr-date">
+                            {getYear(activeItem.date)}
+                            {toMonthDay(activeItem.date)}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   <form
@@ -449,6 +535,55 @@ export default function LifeRecord() {
                   </form>
                 )}
               </div>
+              {/* ===== 메인 카드: 하이라이트 그리드(최대 6개) ===== */}
+              {activeItem.kind === "main" && (
+                <div className="lr-highlight-grid" role="list">
+                  {timeline
+                    .filter((it) => it.isHighlight)
+                    .slice(0, 6)
+                    .map((it) => (
+                      <div
+                        key={it.id}
+                        className="lr-highlight-item"
+                        role="listitem"
+                        title={
+                          (it.kind === "year" ? it.event : it.title) ||
+                          "하이라이트"
+                        }
+                        onClick={() => {
+                          // 썸네일 클릭 시 해당 아이템으로 점프
+                          const i = timeline.findIndex((x) => x.id === it.id);
+                          if (i >= 0) {
+                            const base = angleForIndex(i);
+                            const cur = norm360(base + rotation);
+                            const anchor = getAnchor();
+                            const snapped = rotation + (anchor - cur);
+                            setRotation(snapped);
+                            setActiveIdx(i);
+                          }
+                        }}
+                      >
+                        <img
+                          src={it.cover || "/images/timeline/1.jpeg"}
+                          alt={
+                            (it.kind === "year" ? it.event : it.title) ||
+                            "highlight"
+                          }
+                        />
+                        <span className="lr-highlight-title">
+                          {it.kind === "year" ? it.event : it.title}
+                        </span>
+                      </div>
+                    ))}
+                  {/* 비어 있으면 가이드 텍스트 */}
+                  {isEditing &&
+                    timeline.filter((it) => it.isHighlight).length === 0 && (
+                      <div className="lr-highlight-empty">
+                        별(⭐)을 눌러 하이라이트를 추가하세요. (최대 6개)
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
           </article>
         </section>
