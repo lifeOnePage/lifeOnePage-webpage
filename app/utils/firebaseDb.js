@@ -167,19 +167,6 @@ export async function savePhotoGalleryCategory(uid, categoryKey, data) {
     updatedAt: serverTimestamp(),
   });
 }
-// type TimelineItem = {
-//   year: string;
-//   title: string;
-//   image?: string;
-//   date?: string;
-//   location?: string;
-//   description?: string;
-// };
-
-// type TimelineGroup = {
-//   year: string;
-//   events: TimelineItem[];
-// };
 
 /* 구조
 
@@ -209,20 +196,23 @@ users (컬렉션)
     ├── email: "..."
     └── timeline (컬렉션)
         ├── 2020 (문서)
-        |     └── items (컬렉션)
+        |     └── events (컬렉션)
         |         |── item1 (문서)
         │         │     ├── title: "졸업식"
         │         │     ├── year: "2020"
+        │         │     ├── description : "아아아아"
         │         │     └── image: "https://..."
         |         └── item2 (문서)
         │               ├── title: "졸업식"
         │               ├── year: "2020"
+        │         │     ├── description : "아아아아"
         │               └── image: "https://..."
         └── 2021 (문서)
-              └── items (컬렉션)
+              └── events (컬렉션)
                   └── item1 (문서)
                         ├── title: "졸업식"
                         ├── year: "2021"
+        │         │     ├── description : "아아아아"
                         └── image: "https://..."
 
 // storage 구조

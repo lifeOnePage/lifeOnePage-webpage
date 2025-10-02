@@ -115,7 +115,7 @@ export default function Home() {
       </div>
 
       {/* Sticky 감지용 포인트 */}
-      <div ref={previewTopRef}></div>
+
       <div
         style={{
           height: "100vh",
@@ -158,7 +158,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* <button
+        <button
           onClick={() => {
             console.log(isSelectModalOpen);
             if (!user) setIsSelectModalOpen(true);
@@ -179,7 +179,7 @@ export default function Home() {
           }}
         >
           직접 만들기
-        </button> 
+        </button>
         <SelectModal
           type={type}
           isOpen={isSelectModalOpen}

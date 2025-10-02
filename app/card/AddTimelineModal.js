@@ -94,7 +94,7 @@ export default function AddTimelineModal({ open, onClose, onCreate }) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="이 순간의 이름을 입력하세요. (예: 새로 운 경험!)"
+              placeholder="이 순간의 이름을 입력하세요. (예: 새로운 경험!)"
             />
           </div>
 
@@ -140,7 +140,6 @@ export default function AddTimelineModal({ open, onClose, onCreate }) {
         </form>
       </div>
 
-      {/* 스타일(간단 포함) */}
       <style jsx>{`
         .atl-overlay {
           position: fixed;
@@ -221,11 +220,11 @@ export default function AddTimelineModal({ open, onClose, onCreate }) {
           padding: 10px 2px;
           outline: none;
           background: transparent;
-          font-size: 16px;
+          font-size: 20px;
 
-          color: #424242ff;
+          color: #777;
           font-family: "Pretendard Variable";
-          font-size: 0.75rem;
+          font-size: 1rem;
           font-style: normal;
           font-weight: 300;
           line-height: normal;
@@ -249,7 +248,7 @@ export default function AddTimelineModal({ open, onClose, onCreate }) {
           cursor: pointer;
         }
         .atl-btn.secondary {
-          background: #eee;
+          background: #b3b3b3ff;
         }
         .atl-btn.primary {
           background: #111;
