@@ -383,7 +383,7 @@ export default function Mypage() {
                       listItemVariants={listItemVariants}
                     />
                     <SelectItem
-                    router={router}
+                      router={router}
                       initialData={initialData}
                       selected={selected}
                       setSelected={setSelected}
@@ -605,7 +605,7 @@ function SelectItem({ router, initialData, selected, setSelected }) {
             </div>
           )}
           <h2 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
-            {type === "card" ? "LifeCard" : "LifeReels"}
+            {type === "card" ? "LifeRecords" : "LifeReels"}
           </h2>
           <p>
             {type === "card"
@@ -635,7 +635,9 @@ function SelectItem({ router, initialData, selected, setSelected }) {
                 onClick={() => {
                   // onStart(selected);
                   router.push(
-                    `/${type === "card" ? "card" : initialData.username}`
+                    `/${initialData.username}/${
+                      type === "card" ? "records" : "reels"
+                    }`
                   );
                 }}
               >
