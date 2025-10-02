@@ -497,7 +497,6 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
                     src={activeItem.video}
                     controls
                     playsInline
-                    muted
                     autoPlay
                     loop
                   />
