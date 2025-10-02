@@ -17,6 +17,7 @@ import { view } from "framer-motion";
 import Page from "./card/page";
 import AboutInfo from "./components/AboutInfo";
 import AboutDetail from "./components/AboutDetail";
+import AboutLines from "./components/AboutLines";
 
 // SceneWrapper는 R3F 기반 3D 컴포넌트
 const Main3FGraphic = dynamic(() => import("./components/Main3FGraphic"), {
@@ -107,6 +108,16 @@ export default function Home() {
     >
       {/* 3D 영역 */}
       <div style={{ height: "100vh", position: "relative" }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "50vh",
+            transform: "translateY(-50%)",
+            zIndex: 5000,
+          }}
+        >
+          <AboutLines />
+        </div>
         <Main3FGraphic
           onPreviewRequest={(v) => handleScrollToPreview(v)}
           initialData={initialData}
@@ -123,7 +134,7 @@ export default function Home() {
           position: "relative",
         }}
       >
-        <AboutSweep trigger={trigger} setTrigger={(b) => setTrigger(b)} />
+        {/* <AboutSweep trigger={trigger} setTrigger={(b) => setTrigger(b)} /> */}
         <AboutInfo />
       </div>
 

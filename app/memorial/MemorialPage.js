@@ -509,6 +509,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         />
         <Lifestory
           person={person}
+          userName={person.name}
           onPersonChange={handlePersonChange}
           onSave={handleSave}
           userId={uid}
