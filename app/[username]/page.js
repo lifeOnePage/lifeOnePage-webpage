@@ -47,12 +47,12 @@ export default function ViewOrEditPage() {
   }, [user, username]);
 
   console.log(loading);
-  console.log(dataLoading)
+  console.log(dataLoading);
   if (loading || dataLoading) {
     return (
       <div style={{ textAlign: "center", padding: "40px" }}>불러오는 중...</div>
     );
   }
-  console.log(isMe)
+  console.log(isMe);
   return <MemorialPage uid={viewUid} initialData={viewData} isMe={isMe} />;
 }
