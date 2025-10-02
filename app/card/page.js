@@ -130,36 +130,35 @@ function useIsMobile(bp = 768) {
 export default function LifeRecord({ viewUid, viewData, isMe }) {
   const [timeline, setTimeline] = useState(INITIAL_TIMELINE);
   const [uid, setUid] = useState(viewUid); //로그인 uid
-  console.log(isMe);
+  console.log(viewUid);
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       console.log(isEditing, isMe);
-      if (!user) {
-        // 로그아웃 상태 : editing mode가 아닌 view mode,
-        setUid(viewUid);
-        setOwnerName("");
-        setIsEditing(isMe);
-        setTimeline(INITIAL_TIMELINE);
-        return;
-      }
+
       // 로그인 상태: 사용자별 데이터 로드 후 편집 모드로 전환...
-      setUid(user.uid);
       setIsEditing(isMe);
       try {
         const [items, name] = await Promise.all([
-          fetchTimeline(user.uid),
-          fetchUserName(user.uid),
+          fetchTimeline(viewUid),
+          fetchUserName(viewUid),
         ]);
         setOwnerName(name || user.displayName || "사용자");
         if (items?.length) setTimeline(items);
         else {
-          await upsertTimelineBulk(user.uid, INITIAL_TIMELINE);
+          await upsertTimelineBulk(viewUid, INITIAL_TIMELINE);
           setTimeline(INITIAL_TIMELINE);
         }
       } catch (e) {
         console.error("[timeline] load error:", e);
         setTimeline(INITIAL_TIMELINE);
       }
+
+      // if (!user) {
+      //   // 로그아웃 상태 : editing mode가 아닌 view mode,
+      //   setUid(viewUid);
+      //   setIsEditing(isMe);
+      //   return;
+      // }
     });
     return () => unsub();
   }, []);
@@ -383,7 +382,9 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
     }
   };
 
-  const handleTogglePreview = () => setIsPreview((p) => !p);
+  const handleTogglePreview = () => {
+    setIsPreview((p) => !p);
+  };
   const showEditUI = isEditing && !isPreview;
 
   //로그인 및 로그아웃 관리 함수
@@ -453,7 +454,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
             “작은 장면을 모아 긴 기억을 만듭니다”
           </p>
 
-          {isEditing && (
+          {isEditing && !isPreview && (
             <div className="bg-panel">
               <div className="bg-panel-head">
                 <span className="bg-panel-title">배경 테마</span>
@@ -484,9 +485,9 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
         {/* ========== 중앙: 카드 영역 ========== */}
         <section className="lr-center">
           <article
-            className={`lr-card ${isEditing ? "lr-card--editing" : ""} ${
-              activeItem?.kind === "main" ? "lr-card--main" : ""
-            }`}
+            className={`lr-card ${
+              isEditing && !isPreview ? "lr-card--editing" : ""
+            } ${activeItem?.kind === "main" ? "lr-card--main" : ""}`}
           >
             <div key={activeIdx} className="card-fade">
               <div className="lr-card-media">
@@ -508,7 +509,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
                   />
                 )}
 
-                {isEditing && (
+                {isEditing && !isPreview && (
                   <label className="edit-image-btn">
                     이미지 변경
                     <input
@@ -520,7 +521,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
                   </label>
                 )}
 
-                {isEditing && activeItem && (
+                {isEditing && !isPreview && activeItem && (
                   <div className="media-actions" aria-label="미디어 액션">
                     {activeItem.kind !== "main" && (
                       <button
@@ -580,7 +581,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
 
               {/* 설명/메타 */}
               <div className="lr-card-desc">
-                {!isEditing ? (
+                {!isEditing || isPreview ? (
                   <>
                     {activeItem.kind === "main" ? (
                       <>
@@ -708,6 +709,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
                       </div>
                     ))}
                   {isEditing &&
+                    !isPreview &&
                     timeline.filter((it) => it.isHighlight).length === 0 && (
                       <div className="lr-highlight-empty">
                         별(⭐)을 눌러 하이라이트를 추가하세요. (최대 6개)

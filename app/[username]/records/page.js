@@ -54,5 +54,5 @@ export default function ViewOrEditPage() {
     );
   }
   console.log(viewUid, viewData, isMe);
-  return <LifeRecord uid={viewUid} initialData={viewData} isMe={isMe} />;
+  return <LifeRecord viewUid={viewUid} initialData={viewData} isMe={isMe} />;
 }
