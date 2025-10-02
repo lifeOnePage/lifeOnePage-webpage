@@ -130,30 +130,21 @@ function useIsMobile(bp = 768) {
 export default function LifeRecord({ viewUid, viewData, isMe }) {
   const [timeline, setTimeline] = useState(INITIAL_TIMELINE);
   const [uid, setUid] = useState(viewUid); //로그인 uid
-  console.log(isMe);
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      console.log(isEditing, isMe);
-      if (!user) {
-        // 로그아웃 상태 : editing mode가 아닌 view mode,
-        setUid(viewUid);
-        setOwnerName("");
-        setIsEditing(isMe);
-        setTimeline(INITIAL_TIMELINE);
-        return;
-      }
       // 로그인 상태: 사용자별 데이터 로드 후 편집 모드로 전환...
-      setUid(user.uid);
-      setIsEditing(isMe);
+      setUid(await viewUid);
+      setIsEditing(await isMe);
+      console.log(viewUid)
       try {
         const [items, name] = await Promise.all([
-          fetchTimeline(user.uid),
-          fetchUserName(user.uid),
+          fetchTimeline(await uid),
+          fetchUserName(await uid),
         ]);
         setOwnerName(name || user.displayName || "사용자");
         if (items?.length) setTimeline(items);
         else {
-          await upsertTimelineBulk(user.uid, INITIAL_TIMELINE);
+          await upsertTimelineBulk(await uid, INITIAL_TIMELINE);
           setTimeline(INITIAL_TIMELINE);
         }
       } catch (e) {
@@ -163,6 +154,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
     });
     return () => unsub();
   }, []);
+  console.log(viewUid, uid)
 
   const router = useRouter();
 
@@ -289,7 +281,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
 
   const safeIdx = Math.min(activeIdx, Math.max(0, (timeline?.length || 1) - 1));
   const activeItem = timeline?.[safeIdx] || null;
-
+  console.log(timeline);
   /* =========================
      편집/저장/필드 업데이트
      ========================= */
@@ -393,6 +385,8 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+    } catch (e) {
+      console.error(e);
     } finally {
       setUid(viewUid);
       setIsEditing(false);
@@ -437,6 +431,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
     });
   };
 
+  console.log(viewUid, viewData, isEditing, isMe);
   return (
     <main
       className="lr-page"
