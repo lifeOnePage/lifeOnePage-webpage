@@ -605,16 +605,16 @@ function SelectItem({ router, initialData, selected, setSelected }) {
             </div>
           )}
           <h2 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
-            {type === "card" ? "LifeCard" : "LifeWheel"}
+            {type === "card" ? "LifeCard" : "LifeReels"}
           </h2>
           <p>
             {type === "card"
-              ? initialData.cardUpdatedAt
+              ? initialData?.cardUpdatedAt
                 ? `최근 수정일 ${formatDate(
                     initialData.cardUpdatedAt?.toDate()
                   )} `
                 : "아직 비어있어요"
-              : initialData.pageUpdatedAt
+              : initialData?.pageUpdatedAt
               ? `최근 수정일 ${formatDate(initialData.pageUpdatedAt?.toDate())}`
               : "아직 비어있어요"}
           </p>
