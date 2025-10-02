@@ -1,8 +1,22 @@
+"use client";
 import { BLACK } from "../styles/colorConfig";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig";
 
 export default function MainHeader({ setMode, setTrigger }) {
   const router = useRouter();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      console.log("auth state changed:", firebaseUser);
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div
       style={{
@@ -67,21 +81,21 @@ export default function MainHeader({ setMode, setTrigger }) {
         >
           About
         </div>
-        <div
-          style={{
-            justifyContent: "end",
-            alignItems: "end",
-            paddingLeft: 30,
-            display: "flex",
-            fontWeight: 500,
-          }}
-          onClick={() =>
-            // setMode("mypage")
-            router.push("/login")
-          }
-        >
-          Mypage
-        </div>
+        {user ? (
+          <div
+            style={{ paddingLeft: 30, cursor: "pointer" }}
+            onClick={() => router.push("/login")}
+          >
+            MyPage
+          </div>
+        ) : (
+          <div
+            style={{ paddingLeft: 30, cursor: "pointer" }}
+            onClick={() => router.push("/login")}
+          >
+            Login
+          </div>
+        )}
       </div>
     </div>
   );
