@@ -162,6 +162,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
     });
     return () => unsub();
   }, []);
+  console.log(viewUid, uid)
 
   const router = useRouter();
 
@@ -288,7 +289,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
 
   const safeIdx = Math.min(activeIdx, Math.max(0, (timeline?.length || 1) - 1));
   const activeItem = timeline?.[safeIdx] || null;
-
+  console.log(timeline);
   /* =========================
      편집/저장/필드 업데이트
      ========================= */
@@ -394,6 +395,8 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+    } catch (e) {
+      console.error(e);
     } finally {
       setUid(viewUid);
       setIsEditing(false);
@@ -438,6 +441,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
     });
   };
 
+  console.log(viewUid, viewData, isEditing, isMe);
   return (
     <main
       className="lr-page"

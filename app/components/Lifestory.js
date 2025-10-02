@@ -3,13 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BLACK } from "../styles/colorConfig";
-import { loadLifestorySection, saveLifestorySection } from "../utils/firebaseDb";
+import {
+  loadLifestorySection,
+  saveLifestorySection,
+} from "../utils/firebaseDb";
 
 export default function LifestorySection({
   userId,
   onSaved,
   userName = "00",
   assistantName = "ㅁㅁ",
+  isPreview, // ✅ 미리보기 전용 분기
 }) {
   // --- Steps: 'intro' | 'style' | 'count' | 'qa' | 'result'
   const [step, setStep] = useState("intro");
@@ -28,10 +32,7 @@ export default function LifestorySection({
   const [currentIdx, setCurrentIdx] = useState(0);
 
   /**
-   * ✅ 중복 질문 답변 보존을 위한 맵
-   * key: 질문 텍스트(string), value: 사용자의 답변(string)
-   * - 5 ↔ 10개 전환, "다시 생성하기" 시 fetch된 질문 배열을 기준으로
-   *   기존 답변을 자동 주입합니다.
+   * ✅ 중복 질문 답변 보존 맵 (질문 텍스트 → 답변)
    */
   const [answerMap, setAnswerMap] = useState({});
 
@@ -44,9 +45,6 @@ export default function LifestorySection({
 
   /**
    * ✅ 결과 화면 상태
-   * - hasSaved: 저장 완료 여부 (저장 버튼 숨김/노출 제어)
-   * - isEditingResult: 결과를 textarea로 편집 중인지 여부
-   *   (저장 후 기본적으로 읽기 전용 텍스트로 보여주고, 클릭 시 편집 모드로 전환)
    */
   const [hasSaved, setHasSaved] = useState(false);
   const [isEditingResult, setIsEditingResult] = useState(true);
@@ -54,15 +52,11 @@ export default function LifestorySection({
   const currentQuestion = questions[currentIdx] ?? "";
   const currentAnswer = answers[currentIdx] ?? "";
 
-  // ---------------------------- Lifecycle: QA 진입 시 질문 셋업 ----------------------------
-  /**
-   * ✅ 'qa' 단계 진입 시:
-   *  1) 선택된 스타일/개수 기반 질문 fetch
-   *  2) answerMap을 이용해 겹치는 질문의 기존 답변 주입
-   *  3) 새로운 질문(기존에 없던 텍스트)은 공란으로 초기화
-   */
-
-  // 🔹 최초 마운트/또는 userId 변경 시, Firebase에서 저장된 값 로드
+  // ---------------------------------------------------------------------------
+  // 🔹 Firebase 하이드레이션 (처음 접속 시)
+  //    - 저장된 lifestory가 있으면 스토리/질문/답변/스타일을 상태로 주입
+  //    - 프리뷰 모드에서도 동일하게 로드하되, 렌더는 아래의 프리뷰 전용 분기에서 수행
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
 
@@ -72,28 +66,28 @@ export default function LifestorySection({
         return;
       }
       try {
-        console.log(userId)
         const saved = await loadLifestorySection(userId);
-        console.log(saved)
         if (cancelled) return;
 
-        if (!saved) {
-          // 저장된 게 없다면 처음부터
+        // 저장 구조를 안전하게 접근 (saved?.lifestory가 없을 수도 있으므로)
+        const lifestory = saved?.lifestory || saved || null;
+
+        if (!lifestory) {
+          // 저장된 게 없다면 초기 상태
           setStep("intro");
           setIsBootLoading(false);
           return;
         }
 
-        // 저장값 반영
         const {
-          style,
+          style = null,
           questions: savedQuestions = [],
           answers: savedAnswers = [],
           story = "",
-        } = saved.lifestory;
+        } = lifestory;
 
         // 스타일/개수 프리셀렉트
-        setSelectedStyle(style ?? null);
+        setSelectedStyle(style);
         setQuestionCount(savedQuestions?.length || null);
 
         // 질문/답변/맵 하이드레이션
@@ -103,25 +97,23 @@ export default function LifestorySection({
         savedQuestions.forEach((q, i) => (hydMap[q] = savedAnswers[i] ?? ""));
         setAnswerMap(hydMap);
 
+        // 스토리 상태
         if (story && story.trim()) {
-          // 🔹 저장된 스토리가 있으면 바로 Result 읽기모드로
           setGeneratedStory(story);
           setHasSaved(true);
           setIsEditingResult(false);
           setStep("result");
-          setShouldFetchOnQA(false); // QA 진입시 fetch 스킵
+          setShouldFetchOnQA(false);
         } else if (savedQuestions.length > 0) {
-          // 🔹 스토리는 없고 Q/A만 있으면 QA로 이어서
-          //   - 첫 미답변(또는 마지막 답변) 위치로 커서 이동
+          // 스토리는 없고 Q/A만 있는 경우
           const nextIdx = Math.max(
             0,
             savedAnswers.findIndex((a) => !a || !String(a).trim())
           );
           setCurrentIdx(nextIdx === -1 ? savedQuestions.length - 1 : nextIdx);
           setStep("qa");
-          setShouldFetchOnQA(false); // 하이드레이션한 Q/A를 유지(덮어쓰기 방지)
+          setShouldFetchOnQA(false);
         } else if (style) {
-          // 🔹 스타일만 있으면 개수 선택으로
           setStep("count");
         } else {
           setStep("intro");
@@ -140,31 +132,33 @@ export default function LifestorySection({
     };
   }, [userId]);
 
+  // ---------------------------------------------------------------------------
+  // 🔹 QA 진입 시 질문 fetch
+  //    - 프리뷰 모드에선 동작 불필요 → 즉시 스킵
+  // ---------------------------------------------------------------------------
   useEffect(() => {
+    if (isPreview) return; // ✅ 프리뷰에서는 건너뛰기
     if (step === "qa" && selectedStyle && questionCount) {
       if (!shouldFetchOnQA) {
-        // 하이드레이션으로 이미 채워둔 경우 1회 스킵
-        // 다음부터는 다시 fetch 가능하도록 true로 복구
         setShouldFetchOnQA(true);
         return;
       }
       (async () => {
         const qs = await BLACKBOX_fetchQuestions(selectedStyle, questionCount);
         setQuestions(qs);
-
-        // 맵 기반으로 답변 복원 (겹치지 않는 질문은 빈 문자열)
         const restored = qs.map((q) => answerMap[q] ?? "");
         setAnswers(restored);
         setCurrentIdx(0);
       })();
     }
-  }, [step, selectedStyle, questionCount]); // eslint-disable-line
+  }, [step, selectedStyle, questionCount, shouldFetchOnQA, isPreview]); // eslint-disable-line
 
   // ---------------------------- Navigation Handlers ----------------------------
   const goNextFromIntro = () => setStep("style");
   const goNextFromStyle = () => selectedStyle && setStep("count");
   const goNextFromCount = () => {
     if (!questionCount) return;
+    setShouldFetchOnQA(true);
     setStep("qa");
   };
 
@@ -172,13 +166,11 @@ export default function LifestorySection({
     if (currentIdx > 0) {
       setCurrentIdx((i) => i - 1);
     } else {
-      // 첫 질문에서 이전 → 개수 선택으로
       setStep("count");
     }
   };
 
   const handleNextQA = async () => {
-    // 마지막 질문에서 다음 → 생성
     if (currentIdx === questions.length - 1) {
       setIsGenerating(true);
       try {
@@ -186,10 +178,11 @@ export default function LifestorySection({
           style: selectedStyle,
           questions,
           answers,
+          userName
         });
         setGeneratedStory(story);
-        setHasSaved(false); // 새로 생성되었으니 아직 미저장
-        setIsEditingResult(true); // 기본은 편집 모드
+        setHasSaved(false);
+        setIsEditingResult(true);
         setStep("result");
       } finally {
         setIsGenerating(false);
@@ -200,29 +193,20 @@ export default function LifestorySection({
   };
 
   const handleDotClick = (idx) => {
-    // 진행된 범위 내로만 점프 허용
     if (idx <= currentIdx) setCurrentIdx(idx);
   };
 
   // ---------------------------- 결과 재생성 / 저장 ----------------------------
-  /**
-   * ✅ 다시 생성하기:
-   * - 의미상 '처음부터' → 스타일 단계로 이동(step='style')
-   * - 기존 선택값(스타일/개수)은 유지하여 프리셀렉트
-   * - answerMap은 그대로 유지(겹치는 질문 자동 복원 위해)
-   * - 결과 관련 상태 리셋
-   */
   const handleRegenerate = () => {
     setGeneratedStory("");
     setHasSaved(false);
     setIsEditingResult(true);
-    setStep("style"); // 인트로는 스킵, 첫 유의미 단계로 복귀
+    setStep("style");
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      console.log(userId, selectedStyle, questions, answers, generatedStory);
       await BLACKBOX_saveStory({
         userId: userId ?? "mock-user",
         style: selectedStyle,
@@ -231,7 +215,6 @@ export default function LifestorySection({
         story: generatedStory,
       });
 
-      // 콜백 알림
       onSaved?.({
         style: selectedStyle,
         count: questionCount,
@@ -240,7 +223,6 @@ export default function LifestorySection({
         story: generatedStory,
       });
 
-      // ✅ 저장 후 뷰 전환: 읽기 전용 + 저장 버튼 숨김
       setHasSaved(true);
       setIsEditingResult(false);
     } finally {
@@ -255,10 +237,155 @@ export default function LifestorySection({
     exit: { x: -24, opacity: 0, transition: { duration: 0.2 } },
   };
   const fadeUp = {
-    initial: { y: 8, opacity: 0 },
-    animate: { y: 0, opacity: 1 },
+    initial: { y: 18, opacity: 0 },
+    animate: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.35, ease: "easeOut" },
+    },
+    exit: { y: -12, opacity: 0, transition: { duration: 0.2 } },
   };
 
+  // ===========================================================================
+  // ✅ 프리뷰 전용 렌더링 (isPreview === true)
+  //    - 저장된 스토리가 있으면: 아래→위 슬라이드 업 애니메이션으로 표시
+  //    - 없으면: 안내 문구 표시
+  //    - 어떤 에디팅/버튼/스텝 UI도 노출 X
+  // ===========================================================================
+  if (isPreview) {
+    return (
+      <div style={{ position: "relative", width: "100%", minHeight: "100vh" }}>
+        {/* 로딩 */}
+        <AnimatePresence>
+          {isBootLoading && (
+            <motion.div
+              key="bootloading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={overlay}
+            >
+              <Spinner />
+              <div style={{ marginTop: 10, fontSize: 14, opacity: 0.9 }}>
+                불러오는 중이에요...
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 콘텐츠 */}
+        {!isBootLoading && (
+          <div
+            style={{
+              display: "grid",
+              placeItems: "center",
+              minHeight: "100vh",
+              padding: 24,
+              background: "#fafafa",
+            }}
+          >
+            <AnimatePresence mode="wait">
+              {generatedStory?.trim() ? (
+                <motion.section
+                  key="story"
+                  variants={fadeUp}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  style={{
+                    width: "min(960px, 92vw)",
+                    background: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 14,
+                    boxShadow: "0 10px 28px rgba(0,0,0,0.06)",
+                    padding: "28px 28px 30px",
+                  }}
+                >
+                  {/* 상단 메타(이름/스타일 태그) */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div
+                      style={{ fontWeight: 800, fontSize: 18, color: "#111" }}
+                    >
+                      {userName}님의 생애문
+                    </div>
+                    {selectedStyle && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          padding: "4px 8px",
+                          borderRadius: 999,
+                          background: "#111",
+                          color: "#fff",
+                          letterSpacing: "0.02em",
+                        }}
+                      >
+                        {selectedStyle}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 본문 */}
+                  <article
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      lineHeight: 1.85,
+                      fontSize: 18,
+                      color: "#1f2937",
+                    }}
+                  >
+                    {generatedStory}
+                  </article>
+                </motion.section>
+              ) : (
+                <motion.section
+                  key="empty"
+                  variants={fadeUp}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  style={{
+                    width: "min(780px, 92vw)",
+                    textAlign: "center",
+                    color: "#374151",
+                    background: "#fff",
+                    border: "1px dashed #d1d5db",
+                    borderRadius: 14,
+                    padding: "40px 24px",
+                  }}
+                >
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: 20,
+                      fontWeight: 700,
+                      color: "#111",
+                    }}
+                  >
+                    아직 생애문이 작성되지 않았어요
+                  </h2>
+                  <p style={{ marginTop: 10, fontSize: 16, opacity: 0.9 }}>
+                    편집 화면에서 질문에 답하고 <strong>생애문 생성</strong>을
+                    완성해 보세요.
+                  </p>
+                </motion.section>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ===========================================================================
+  // ⬇︎ 아래부터는 편집 모드 (기존 플로우 유지)
+  // ===========================================================================
   return (
     <div style={wrap}>
       <div style={sheet}>
@@ -278,20 +405,6 @@ export default function LifestorySection({
                 textAlign: "center",
               }}
             >
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 12,
-                  marginBottom: 16,
-                }}
-              >
-                {/* 웨이브 이모지 등 인삿말 자리는 필요 시 추가 */}
-              </motion.div>
               <motion.h2
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -408,9 +521,9 @@ export default function LifestorySection({
                   animate="animate"
                   style={qaCard}
                 >
-                  <div
-                    style={{ fontSize: 14, opacity: 0.7, marginBottom: 6 }}
-                  >{`질문 ${currentIdx + 1} / ${questions.length}`}</div>
+                  <div style={{ fontSize: 14, opacity: 0.7, marginBottom: 6 }}>
+                    {`질문 ${currentIdx + 1} / ${questions.length}`}
+                  </div>
                   <div
                     style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}
                   >
@@ -420,13 +533,12 @@ export default function LifestorySection({
                     value={currentAnswer}
                     onChange={(e) => {
                       const v = e.target.value;
-                      const q = currentQuestion; // 안전하게 캡처
+                      const q = currentQuestion;
                       setAnswers((arr) => {
                         const copy = [...arr];
                         copy[currentIdx] = v;
                         return copy;
                       });
-                      // ✅ 질문 텍스트 기준으로 답변 보존
                       setAnswerMap((prev) => ({ ...prev, [q]: v }));
                     }}
                     placeholder="여기에 답변을 적어주세요"
@@ -476,7 +588,6 @@ export default function LifestorySection({
               exit="exit"
               style={section}
             >
-              {/* 결과에서도 점프 가능(검토/수정 용도) */}
               <ProgressDots
                 total={questions.length}
                 current={questions.length - 1}
@@ -487,7 +598,6 @@ export default function LifestorySection({
               />
 
               <div style={{ position: "relative", marginTop: 16 }}>
-                {/* Q&A로 돌아가 재검토 */}
                 <PrevButton
                   onClick={() => {
                     setStep("qa");
@@ -506,13 +616,13 @@ export default function LifestorySection({
                     생성된 생애문
                   </div>
 
-                  {/* ✅ 안내문구: textarea 바깥의 작은 텍스트 */}
+                  {/* 안내문구(인풋 바깥) */}
                   <p style={{ margin: "0 0 8px", fontSize: 16, opacity: 0.7 }}>
                     생애문 생성 초안입니다. 내용을 직접 원하시는대로 다듬은 뒤
                     저장할 수 있어요.
                   </p>
 
-                  {/* ✅ 저장 전: 편집 모드 / 저장 후: 읽기 전용(클릭 시 편집 전환) */}
+                  {/* 저장 전: 편집 / 저장 후: 읽기 */}
                   {isEditingResult ? (
                     <textarea
                       value={generatedStory}
@@ -523,7 +633,7 @@ export default function LifestorySection({
                     <div
                       onClick={() => {
                         setIsEditingResult(true);
-                        setHasSaved(false); // 편집 재시작 → 다시 저장 필요
+                        setHasSaved(false);
                       }}
                       style={{
                         border: "1px dashed #9ca3af",
@@ -540,7 +650,6 @@ export default function LifestorySection({
                     </div>
                   )}
 
-                  {/* ✅ 읽기 전용 상태 안내 */}
                   {!isEditingResult && (
                     <p
                       style={{ margin: "8px 0 0", fontSize: 16, opacity: 0.7 }}
@@ -551,7 +660,6 @@ export default function LifestorySection({
                 </motion.div>
               </div>
 
-              {/* ✅ 결과 푸터: [다시 생성하기 / 저장], 저장 후엔 저장 버튼 숨김 */}
               <Footer>
                 <Secondary onClick={handleRegenerate}>다시 생성하기</Secondary>
                 {!hasSaved && (
@@ -740,8 +848,6 @@ function PrevButton({ onClick }) {
         placeItems: "center",
         cursor: "pointer",
       }}
-      // aria-label="이전"
-      // title="이전"
     >
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
         <path
@@ -870,10 +976,9 @@ const Footer = ({ children }) => (
   </div>
 );
 
-/** -------------------- BLACKBOX APIs (Mocks) -------------------- */
+/** -------------------- BLACKBOX APIs -------------------- */
 async function BLACKBOX_fetchQuestions(style, count) {
-  // Replace with your real question generator. Here is a simple mock.
-  // ⚠️ 5/10개 옵션의 "겹침"을 위해 0~4번 문항은 언제나 동일하게 유지
+  // 5/10개 옵션의 "겹침"을 위해 0~4번 문항 동일
   const base = [
     "어릴 적 가장 소중한 기억은 무엇인가요?",
     "당신을 지금의 당신으로 만든 전환점은 언제였나요?",
@@ -890,28 +995,21 @@ async function BLACKBOX_fetchQuestions(style, count) {
   return base.slice(0, count);
 }
 
-// 기존 mock을 이 함수로 완전히 교체하세요.
-async function BLACKBOX_generateStory({ style, questions, answers }) {
-  // Q/A를 OpenAI에 보낼 메시지 배열로 직렬화
-  // 형식: bot(assistant): "질문: ...", user: "답변: ..."
-  console.log(questions, answers, style);
+// GPT API 호출
+async function BLACKBOX_generateStory({ style, questions, answers, userName }) {
   const qaMessages = [];
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
     const a = answers[i];
     if (!q) continue;
     qaMessages.push({ sender: "bot", text: `질문: ${q}` });
-    // 답변이 비어있으면 유추 금지를 안내에 이미 포함되어 있으므로, 빈 답변도 그대로 전달 가능
     qaMessages.push({ sender: "user", text: `답변: ${a ?? ""}` });
   }
 
   const res = await fetch("/api/gpt-story", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      style,
-      messages: qaMessages,
-    }),
+    body: JSON.stringify({ style, messages: qaMessages, userName }),
   });
 
   if (!res.ok) {
@@ -922,7 +1020,7 @@ async function BLACKBOX_generateStory({ style, questions, answers }) {
   const data = await res.json();
   return (
     data.story ??
-    "죄송합니다. 생애문 생성에 도중 문제가 생겼어요. 다시 생성하기를 눌러 재시도해보세요."
+    "죄송합니다. 생애문 생성에 문제가 생겼어요. 다시 시도해 주세요."
   );
 }
 
@@ -933,16 +1031,8 @@ async function BLACKBOX_saveStory({
   answers,
   story,
 }) {
-  // Replace with Firestore write.
-  // console.log("[SAVE]", { userId, style, answers, story });
   try {
-    const updateData = {
-      story,
-      style,
-      questions,
-      answers,
-    };
-
+    const updateData = { story, style, questions, answers };
     await saveLifestorySection(userId, updateData);
   } catch (e) {
     console.warn(e);

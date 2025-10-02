@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req) {
   // messages: [{ sender: 'bot' | 'user', text: string }...]
   // style: '진중한' | '낭만적인' | '재치있는' | '신비로운'
-  const { messages = [], style } = await req.json();
+  const { messages = [], style, userName } = await req.json();
 
   // 분위기별 톤 가이드(선택 사항: 모델이 톤을 더 잘 따라오도록 도와줍니다)
   const toneMap = {
@@ -16,7 +16,7 @@ export async function POST(req) {
   const selectedTone = style && toneMap[style] ? toneMap[style] : null;
 
   const systemPrompt = `
-당신은 GPT 대화를 기반으로 한 사용자의 '생애문'(life story essay)을 작성하는 작가입니다.
+당신은 GPT 대화를 기반으로 하여 ${userName}님의 '생애문'(life story essay)을 작성하는 작가입니다.
 ${selectedTone ? `선택된 분위기: "${style}" (${selectedTone})` : ''}
 
 다음 기준에 맞춰 사용자 생애문을 구성하십시오:
@@ -32,6 +32,7 @@ ${selectedTone ? `선택된 분위기: "${style}" (${selectedTone})` : ''}
 
 출력은 300자 이내로 구성하며, 마치 인물 소개서 또는 추모문처럼 진정성을 담아 정돈된 문장으로 작성하십시오.
 `.trim();
+console.log(systemPrompt)
 
   // 대화 메시지를 OpenAI 포맷으로 변환
   const openAiMessages = [
