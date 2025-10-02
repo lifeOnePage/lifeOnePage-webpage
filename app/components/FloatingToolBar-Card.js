@@ -80,7 +80,7 @@ export default function FloatingToolbar({
         position: "fixed",
         bottom: 24,
         right: 24,
-        zIndex: 1000,
+        zIndex: 10000,
         pointerEvents: "none",
       }}
     >
@@ -89,7 +89,7 @@ export default function FloatingToolbar({
         transition={{ duration: 0.3 }}
         style={{
           pointerEvents: "auto",
-          background: "#1a1a1a",
+          background: "#1a1a1aff",
           padding: collapsed ? "8px" : "12px",
           borderRadius: "28px",
           color: "#fff",

@@ -203,6 +203,7 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    z-index: 10001;
   }
   .toolbar-anchor {
     z-index: 10000;

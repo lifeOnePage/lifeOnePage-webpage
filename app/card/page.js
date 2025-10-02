@@ -1,9 +1,18 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import "./cardPage.css";
 import "./cardPage-mobile.css";
 import FloatingToolbar from "../components/FloatingToolBar-Card";
 import AddTimelineModal from "./AddTimelineModal";
+import { auth } from "../firebase/firebaseConfig";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import {
+  fetchTimeline,
+  upsertTimelineBulk,
+  uploadTimelineFile,
+  fetchUserName,
+} from "../utils/firebaseDb-records";
 
 /* =========================
    초기 데이터 / 상수
@@ -13,7 +22,7 @@ const INITIAL_TIMELINE = [
     id: "PLAY",
     kind: "main",
     label: "PLAY",
-    title: "최아텍의 이야기",
+    title: "사용자의 이야기",
     date: "2001.11.12",
     location: "서울 마포구",
     desc: "도시의 작은 변화를 관찰하며 기록하는 아티스트이다. 일상의 경험을 이야기로 엮어 사람들이 스스로의 시간을 아카이브하도록 돕는다.",
@@ -40,17 +49,6 @@ const INITIAL_TIMELINE = [
     location: "어린이대공원",
     cover: "/images/timeline/3.jpeg",
     desc: "초등학교 입학 후 처음으로 떠난 소풍이었다. 친구들과 함께 김밥을 나누어 먹고, 놀이기구를 타며 웃음소리가 끊이지 않았다.",
-    isHighlight: false,
-  },
-  {
-    id: 2011,
-    kind: "year",
-    label: "2011",
-    event: "새로운 시작",
-    date: "2011.03.02",
-    location: "서울",
-    cover: "/images/timeline/4.jpeg",
-    desc: "새로운 교실, 새로운 친구들. 기대와 설렘 속에서 중학교 생활을 시작했다.",
     isHighlight: false,
   },
 ];
@@ -131,12 +129,49 @@ function useIsMobile(bp = 768) {
 
 export default function LifeRecord() {
   const [timeline, setTimeline] = useState(INITIAL_TIMELINE);
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // 로그아웃 상태 : editing mode가 아닌 view mode,
+        setUid(null);
+        setOwnerName("");
+        setIsEditing(false);
+        setTimeline(INITIAL_TIMELINE);
+        return;
+      }
+      // 로그인 상태: 사용자별 데이터 로드 후 편집 모드로 전환...
+      setUid(user.uid);
+      setIsEditing(true);
+      try {
+        const [items, name] = await Promise.all([
+          fetchTimeline(user.uid),
+          fetchUserName(user.uid),
+        ]);
+        setOwnerName(name || user.displayName || "사용자");
+        if (items?.length) setTimeline(items);
+        else {
+          await upsertTimelineBulk(user.uid, INITIAL_TIMELINE);
+          setTimeline(INITIAL_TIMELINE);
+        }
+      } catch (e) {
+        console.error("[timeline] load error:", e);
+        setTimeline(INITIAL_TIMELINE);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const [uid, setUid] = useState(null); //로그인 uid
+  const router = useRouter();
+
   const [rotation, setRotation] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isPreview, setIsPreview] = useState(false);
-  const [isUpdated, setIsUpdated] = useState(false);
+  const [isEditing, setIsEditing] = useState(true); //초기 진입 시 edit mode 상태로
+  const [isPreview, setIsPreview] = useState(false); //미리보기 상태 처리
+  const [isUpdated, setIsUpdated] = useState(false); //업데이트 true이면 save icon 활성화되게
   const [addOpen, setAddOpen] = useState(false);
+
+  const [ownerName, setOwnerName] = useState(""); //username
 
   // 테마
   const DEFAULT_THEME = BG_THEME_PALETTE[0];
@@ -147,6 +182,22 @@ export default function LifeRecord() {
   const scrollSound = useRef(null);
   const touchStartX = useRef(0);
   const touchMoveX = useRef(0);
+
+  useEffect(() => {
+    const uid = auth.currentUser?.uid; // 혹은 컨텍스트
+    if (!uid) return;
+
+    (async () => {
+      const items = await fetchTimeline(uid);
+      if (items.length > 0) {
+        setTimeline(items); // DB 값으로 대체
+      } else {
+        // 최초 사용자: 초기 데이터 한 번 밀어넣기
+        await upsertTimelineBulk(uid, INITIAL_TIMELINE);
+        setTimeline(INITIAL_TIMELINE);
+      }
+    })();
+  }, []);
 
   /* =========================
      Desktop/Mobile 배치 설정
@@ -264,10 +315,27 @@ export default function LifeRecord() {
         if (item.kind === "year") item.event = value;
         else item.title = value;
       } else if (field === "image") {
-        item.cover = value;
+        if (value && typeof value === "object") {
+          item.cover = value.url || "";
+          item._file = value.file || null;
+          item._fileType = "cover";
+        } else {
+          item.cover = value;
+        }
+        item.isImageUpdated = true;
+      } else if (field === "video") {
+        if (value && typeof value === "object") {
+          item.video = value.url || "";
+          item._file = value.file || null;
+          item._fileType = "video";
+        } else {
+          item.video = value;
+        }
         item.isImageUpdated = true;
       } else if (field === "date") {
         item.date = value;
+      } else if (field === "isHighlight") {
+        item.isHighlight = value;
       } else {
         item[field] = value;
       }
@@ -281,14 +349,53 @@ export default function LifeRecord() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     if (file.type?.startsWith("video/")) {
-      setField("video", url);
+      setField("video", { url, file });
     } else {
-      setField("image", url);
+      setField("image", { url, file });
     }
     setIsUpdated(true);
   };
 
-  const handleSave = () => {};
+  const handleSave = async () => {
+    try {
+      if (!uid) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+
+      const toSave = await Promise.all(
+        timeline.map(async (it, idx) => {
+          const next = { ...it, order: idx };
+
+          if (it.isImageUpdated && it._file) {
+            const type = it._fileType === "video" ? "video" : "cover";
+            const url = await uploadTimelineFile(
+              uid,
+              String(it.id),
+              it._file,
+              type
+            );
+            if (type === "video") next.video = url;
+            else next.cover = url; // ★ Firestore에는 다운로드 URL 저장
+            next.isImageUpdated = false;
+            delete next._file;
+            delete next._fileType;
+          }
+          return next;
+        })
+      );
+
+      await upsertTimelineBulk(uid, toSave);
+
+      setIsUpdated(false);
+      setIsEditing(true);
+      alert("저장되었습니다.");
+    } catch (err) {
+      console.error(err);
+      alert("저장 중 오류가 발생했습니다.");
+    }
+  };
+
   const handleCancel = () => {
     setTimeline(INITIAL_TIMELINE);
     setIsEditing(false);
@@ -297,17 +404,34 @@ export default function LifeRecord() {
   const handleTogglePreview = () => setIsPreview((p) => !p);
   const showEditUI = isEditing && !isPreview;
 
+  //로그인 및 로그아웃 관리 함수
+  const handleLogin = () => {
+    router.push("/login");
+  };
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } finally {
+      setUid(null);
+      setIsEditing(false);
+    }
+  };
+
   /* =========================
      하이라이트/삭제
      ========================= */
-  const toggleHighlight = (id) => {
-    setTimeline((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, isHighlight: !item.isHighlight } : item
-      )
-    );
+  const toggleHighlight = () => {
+    setTimeline((prev) => {
+      const next = [...prev];
+      next[activeIdx] = {
+        ...next[activeIdx],
+        isHighlight: !next[activeIdx].isHighlight,
+      };
+      return next;
+    });
     setIsUpdated(true);
   };
+
   const handleDeleteActive = () => {
     if (activeItem?.kind === "main" || timeline.length <= 1) return;
     setTimeline((prev) => {
@@ -342,7 +466,7 @@ export default function LifeRecord() {
         <section className="lr-left">
           <h1 className="lr-title">Life- Record</h1>
           <p className="lr-sub">
-            <b>최아텍</b>님의 라이프 레코드입니다.
+            <b>{ownerName || "사용자"}</b>님의 라이프 레코드입니다.
             <br />
             “작은 장면을 모아 긴 기억을 만듭니다”
           </p>
@@ -479,7 +603,7 @@ export default function LifeRecord() {
                     {activeItem.kind === "main" ? (
                       <>
                         <div className="lr-meta lr-meta--mainTop">
-                          <div className="lr-name">최아텍</div>
+                          <div className="lr-name">{ownerName || "사용자"}</div>
                           <div className="lr-date">
                             {getYear(activeItem.date)}
                             {toMonthDay(activeItem.date)}
@@ -668,7 +792,7 @@ export default function LifeRecord() {
         {!isEditing ? (
           <button
             className="login-btn-fixed"
-            onClick={() => setIsEditing(true)}
+            onClick={handleLogin}
             aria-pressed="false"
             title="로그인하고 편집 모드로 전환"
           >
@@ -678,7 +802,7 @@ export default function LifeRecord() {
           <div className="toolbar-anchor" role="region" aria-label="편집 도구">
             <FloatingToolbar
               onSave={handleSave}
-              onLogout={() => setIsEditing(false)}
+              onLogout={handleLogout}
               isPreview={isPreview}
               setIsPreview={setIsPreview}
               isUpdated={isUpdated}

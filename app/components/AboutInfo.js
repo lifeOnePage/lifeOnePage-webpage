@@ -39,9 +39,8 @@ export default function AboutInfo() {
           position: relative;
           height: 100vh;
           width: 100%;
-          //   background: url("/images/bg-life-gallery.png") no-repeat center center /
-          //     cover;
-          background: black;
+          background: url("/images/bg-life-gallery.png") no-repeat center center /
+            cover;
           color: #fff;
 
           display: flex;
