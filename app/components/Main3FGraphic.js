@@ -1,7 +1,13 @@
 "use client";
 
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import React, { useRef, useState, useMemo, useCallback, useEffect } from "react";
+import React, {
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+} from "react";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useHelper } from "@react-three/drei";
@@ -28,7 +34,6 @@ const COLORS = {
   light: "#fff",
 };
 
-
 function CameraZoom({ mode }) {
   const { camera, size } = useThree();
 
@@ -36,11 +41,14 @@ function CameraZoom({ mode }) {
   const targetZoom = mode === "default" ? 1.5 : 1.0;
 
   // 부드러운 전환: framer-motion만 쓰고 싶다면 useMotionValue/useSpring로 대체 가능
-  const { z } = useSpring({ z: targetZoom, config: { tension: 180, friction: 20 }});
+  const { z } = useSpring({
+    z: targetZoom,
+    config: { tension: 180, friction: 20 },
+  });
 
   useFrame(() => {
     const zoom = z.get ? z.get() : targetZoom; // (react-spring / framer 둘 중 택1)
-    camera.zoom = zoom;                   // ★ zoom으로 전체 장면 확대/축소
+    camera.zoom = zoom; // ★ zoom으로 전체 장면 확대/축소
     camera.updateProjectionMatrix();
   });
 
@@ -136,9 +144,9 @@ function PlaneWithTabs({ hovered, onPreviewRequest }) {
   );
 }
 
-const ENTRANCE_OFFSET = 80;   // 시작 시 바깥쪽으로 얼마나 떨어져서 들어올지(px)
-const STAGGER = 0.02;         // 플레인별 지연(초)
-const DURATION = 0.9;         // 한 플레인이 들어오는 데 걸리는 시간(초)
+const ENTRANCE_OFFSET = 80; // 시작 시 바깥쪽으로 얼마나 떨어져서 들어올지(px)
+const STAGGER = 0.02; // 플레인별 지연(초)
+const DURATION = 0.9; // 한 플레인이 들어오는 데 걸리는 시간(초)
 
 function easeOutCubic(t) {
   return 1 - Math.pow(1 - t, 3);
@@ -146,13 +154,13 @@ function easeOutCubic(t) {
 
 /** 개별 플레인: 위치/불투명도/색을 프레임마다 업데이트 */
 function RingPlane({
-  outDir,           // 원점→플레인 방향 (정규화)
-  quat,             // 플레인이 원점을 향하도록 고정된 회전
-  delay,            // 개별 스태거 지연
-  hoveredRef,       // 호버 상태 참조
+  outDir, // 원점→플레인 방향 (정규화)
+  quat, // 플레인이 원점을 향하도록 고정된 회전
+  delay, // 개별 스태거 지연
+  hoveredRef, // 호버 상태 참조
   currentRadiusRef, // 부모에서 관리하는 부드러운 반지름
-  colorOn,          // hovered true일 때 색
-  colorOff,         // hovered false일 때 색
+  colorOn, // hovered true일 때 색
+  colorOff, // hovered false일 때 색
 }) {
   const meshRef = useRef();
   const matRef = useRef();
@@ -222,7 +230,11 @@ function ImageRing({ hovered, onPreviewRequest }) {
       const angle = (Math.PI * 2 * j) / RING_COUNT;
 
       // 원점 → 플레인(반지름 1로 정규화한 방향)
-      const outDir = new THREE.Vector3(0, Math.cos(angle), Math.sin(angle)).normalize();
+      const outDir = new THREE.Vector3(
+        0,
+        Math.cos(angle),
+        Math.sin(angle)
+      ).normalize();
 
       // 플레인이 원점을 향하도록: (0,1,0) → (원점-플레인) 방향
       const inDir = outDir.clone().multiplyScalar(-1); // 플레인→원점
@@ -232,7 +244,7 @@ function ImageRing({ hovered, onPreviewRequest }) {
       );
 
       // 중앙에서 바깥으로 퍼지는 스태거(원하면 j*STAGGER로 단순화 가능)
-      const order = Math.abs(j - mid);      // 중앙에 가까울수록 delay 작게
+      const order = Math.abs(j - mid); // 중앙에 가까울수록 delay 작게
       const delay = order * STAGGER;
 
       arr.push({ j, outDir, quat, delay });
@@ -415,7 +427,7 @@ function Main3FGraphic({ onPreviewRequest, initialData, setTrigger }) {
   const [hoveredRing, setHoveredRing] = useState(false);
   const [mode, setMode] = useState("default"); // "default" | "mypage"
   const [id, setId] = useState("");
-  console.log(initialData)
+  console.log(initialData);
 
   // 헤더에서 호출하는 모드 변경 핸들러를 인터셉트:
   // - about: 모드 변경 없이 100vh 아래로 스크롤
@@ -439,8 +451,8 @@ function Main3FGraphic({ onPreviewRequest, initialData, setTrigger }) {
 
   // 캔버스 래퍼 이동(요구사항: default에서 약간 오른쪽 치우침, mypage에서 살짝 왼쪽 이동)
   const canvasVariants = {
-    default: { x:"20vw", opacity: 1, transition: TRANSITION },
-    mypage: { x:"-10vw",opacity: 0.9, transition: TRANSITION },
+    default: { x: "20vw", opacity: 1, transition: TRANSITION },
+    mypage: { x: "-10vw", opacity: 0.9, transition: TRANSITION },
   };
 
   // AboutLines 가시성(요구사항: mypage에서 opacity 0)
@@ -460,7 +472,7 @@ function Main3FGraphic({ onPreviewRequest, initialData, setTrigger }) {
       }}
     >
       {/* 헤더: setMode를 인터셉터로 전달 */}
-      <MainHeader setMode={handleHeaderModeChange} setTrigger={setTrigger}/>
+      <MainHeader setMode={handleHeaderModeChange} setTrigger={setTrigger} />
 
       {/* Canvas + Overlays */}
       <motion.div
@@ -468,7 +480,6 @@ function Main3FGraphic({ onPreviewRequest, initialData, setTrigger }) {
         // initial={false}
         animate={mode}
       >
-        AboutLines (좌측 영역에 고정 배치: 예전처럼 380px 컬럼 중앙 정렬)
         <motion.div
           style={{
             position: "absolute",
