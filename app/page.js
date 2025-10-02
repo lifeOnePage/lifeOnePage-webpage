@@ -179,7 +179,7 @@ export default function Home() {
           }}
         >
           직접 만들기
-        </button> */}
+        </button> 
         <SelectModal
           type={type}
           isOpen={isSelectModalOpen}

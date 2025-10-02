@@ -1,12 +1,12 @@
 "use client";
 import { useParams } from "next/navigation";
-import MemorialPage from "../memorial/MemorialPage";
-import { checkIsMe } from "../utils/checkIsMe";
-import { useUser } from "../contexts/UserContext";
+import MemorialPage from "../../memorial/MemorialPage";
+import { checkIsMe } from "../../utils/checkIsMe";
+import { useUser } from "../../contexts/UserContext";
 import { useEffect, useState } from "react";
 import { getDocs, collection, query, where } from "firebase/firestore";
-import { fetchUserData } from "../utils/firebaseDb";
-import { firestore } from "../firebase/firebaseConfig";
+import { fetchUserData } from "../../utils/firebaseDb";
+import { firestore } from "../../firebase/firebaseConfig";
 
 export default function ViewOrEditPage() {
   const { username } = useParams();

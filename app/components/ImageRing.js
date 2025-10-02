@@ -67,6 +67,8 @@ function ImageRingComponent(
       }),
     []
   );
+
+  console.log("imageUrls:", imageUrls,"videoUrls:", videoUrls)
   const [isMuted, setIsMuted] = useState(true);
   const [leftmostVideoElement, setLeftmostVideoElement] = useState(null);
   const [categories, setCategories] = useState([
