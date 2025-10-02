@@ -1,6 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
-import MemorialPage from "../../memorial/MemorialPage";
+import LifeRecord from "../../card/page.js";
 import { checkIsMe } from "../../utils/checkIsMe";
 import { useUser } from "../../contexts/UserContext";
 import { useEffect, useState } from "react";
@@ -53,6 +53,6 @@ export default function ViewOrEditPage() {
       <div style={{ textAlign: "center", padding: "40px" }}>불러오는 중...</div>
     );
   }
-  console.log(isMe);
-  return <MemorialPage uid={viewUid} initialData={viewData} isMe={isMe} />;
+  console.log(viewUid, viewData, isMe);
+  return <LifeRecord uid={viewUid} initialData={viewData} isMe={isMe} />;
 }

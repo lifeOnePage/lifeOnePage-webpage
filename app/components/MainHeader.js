@@ -1,6 +1,8 @@
 import { BLACK } from "../styles/colorConfig";
+import { useRouter } from "next/navigation";
 
 export default function MainHeader({ setMode, setTrigger }) {
+  const router = useRouter();
   return (
     <div
       style={{
@@ -60,7 +62,7 @@ export default function MainHeader({ setMode, setTrigger }) {
           }}
           onClick={() => {
             setMode("about");
-            setTrigger(true)
+            setTrigger(true);
           }}
         >
           About
@@ -73,7 +75,10 @@ export default function MainHeader({ setMode, setTrigger }) {
             display: "flex",
             fontWeight: 500,
           }}
-          onClick={() => setMode("mypage")}
+          onClick={() =>
+            // setMode("mypage")
+            router.push("/login")
+          }
         >
           Mypage
         </div>

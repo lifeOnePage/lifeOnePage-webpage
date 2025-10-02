@@ -127,21 +127,24 @@ function useIsMobile(bp = 768) {
   return m;
 }
 
-export default function LifeRecord() {
+export default function LifeRecord({ viewUid, viewData, isMe }) {
   const [timeline, setTimeline] = useState(INITIAL_TIMELINE);
+  const [uid, setUid] = useState(viewUid); //로그인 uid
+  console.log(isMe);
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
+      console.log(isEditing, isMe);
       if (!user) {
         // 로그아웃 상태 : editing mode가 아닌 view mode,
-        setUid(null);
+        setUid(viewUid);
         setOwnerName("");
-        setIsEditing(false);
+        setIsEditing(isMe);
         setTimeline(INITIAL_TIMELINE);
         return;
       }
       // 로그인 상태: 사용자별 데이터 로드 후 편집 모드로 전환...
       setUid(user.uid);
-      setIsEditing(true);
+      setIsEditing(isMe);
       try {
         const [items, name] = await Promise.all([
           fetchTimeline(user.uid),
@@ -161,7 +164,6 @@ export default function LifeRecord() {
     return () => unsub();
   }, []);
 
-  const [uid, setUid] = useState(null); //로그인 uid
   const router = useRouter();
 
   const [rotation, setRotation] = useState(0);
@@ -182,22 +184,6 @@ export default function LifeRecord() {
   const scrollSound = useRef(null);
   const touchStartX = useRef(0);
   const touchMoveX = useRef(0);
-
-  useEffect(() => {
-    const uid = auth.currentUser?.uid; // 혹은 컨텍스트
-    if (!uid) return;
-
-    (async () => {
-      const items = await fetchTimeline(uid);
-      if (items.length > 0) {
-        setTimeline(items); // DB 값으로 대체
-      } else {
-        // 최초 사용자: 초기 데이터 한 번 밀어넣기
-        await upsertTimelineBulk(uid, INITIAL_TIMELINE);
-        setTimeline(INITIAL_TIMELINE);
-      }
-    })();
-  }, []);
 
   /* =========================
      Desktop/Mobile 배치 설정
@@ -301,7 +287,8 @@ export default function LifeRecord() {
     scrollSound.current = new Audio("/sounds/scroll.m4a");
   }, []);
 
-  const activeItem = timeline[activeIdx];
+  const safeIdx = Math.min(activeIdx, Math.max(0, (timeline?.length || 1) - 1));
+  const activeItem = timeline?.[safeIdx] || null;
 
   /* =========================
      편집/저장/필드 업데이트
@@ -396,11 +383,6 @@ export default function LifeRecord() {
     }
   };
 
-  const handleCancel = () => {
-    setTimeline(INITIAL_TIMELINE);
-    setIsEditing(false);
-    setIsUpdated(true);
-  };
   const handleTogglePreview = () => setIsPreview((p) => !p);
   const showEditUI = isEditing && !isPreview;
 
@@ -412,7 +394,7 @@ export default function LifeRecord() {
     try {
       await signOut(auth);
     } finally {
-      setUid(null);
+      setUid(viewUid);
       setIsEditing(false);
     }
   };
@@ -503,7 +485,7 @@ export default function LifeRecord() {
         <section className="lr-center">
           <article
             className={`lr-card ${isEditing ? "lr-card--editing" : ""} ${
-              activeItem.kind === "main" ? "lr-card--main" : ""
+              activeItem?.kind === "main" ? "lr-card--main" : ""
             }`}
           >
             <div key={activeIdx} className="card-fade">
