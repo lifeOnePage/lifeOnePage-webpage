@@ -26,6 +26,7 @@ import {
 } from "../utils/firebaseDb";
 import FloatingToolbar from "../components/FloatingToolBar";
 import SuccessOverlay from "../components/SuccessOverlay";
+import ScrollUpOneViewportButton from "../components/ScrollUpOneViewportButton";
 import GalleryNav from "../components/GalleryNav";
 import { useRouter } from "next/navigation";
 import { BLACK } from "../styles/colorConfig";
@@ -428,6 +429,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         overscrollBehaviorY: "contain",
       }}
     >
+      <ScrollUpOneViewportButton step={1} />
       {isMe && (
         <FloatingToolbar
           person={person}
@@ -509,6 +511,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         />
         <Lifestory
           person={person}
+          userName={person.name}
           onPersonChange={handlePersonChange}
           onSave={handleSave}
           userId={uid}
@@ -550,9 +553,9 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
                     margin: "30px 20px",
                   }}
                 > */}
-                <strong style={{ color: "#fefefe", fontSize: "1.8rem" }}>
+                {/* <strong style={{ color: "#fefefe", fontSize: "1.8rem" }}>
                   {person.name}님의 영상기록관
-                </strong>
+                </strong> */}
 
                 {/* </div> */}
                 {!isBeforeLogin && !isPreview && (
