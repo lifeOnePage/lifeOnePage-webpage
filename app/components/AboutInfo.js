@@ -41,6 +41,7 @@ export default function AboutInfo() {
           width: 100%;
           background: url("/images/bg-life-gallery.png") no-repeat center center /
             cover;
+          background: #121212;
           color: #fff;
 
           display: flex;

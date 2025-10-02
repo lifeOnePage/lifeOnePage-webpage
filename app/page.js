@@ -101,7 +101,7 @@ export default function Home() {
     <div
       style={{
         overflow: "visible",
-        background: "black",
+        background: "#121212",
         color: "white",
         fontFamily: "pretendard",
       }}
@@ -118,14 +118,13 @@ export default function Home() {
         >
           <AboutLines />
         </div>
+
         <Main3FGraphic
           onPreviewRequest={(v) => handleScrollToPreview(v)}
           initialData={initialData}
           setTrigger={(b) => setTrigger(b)}
         />
       </div>
-
-      {/* Sticky 감지용 포인트 */}
 
       <div
         style={{
@@ -134,116 +133,12 @@ export default function Home() {
           position: "relative",
         }}
       >
-        {/* <AboutSweep trigger={trigger} setTrigger={(b) => setTrigger(b)} /> */}
         <AboutInfo />
       </div>
 
-      {/* 상세페이지 */}
       <div>
         <AboutDetail />
       </div>
-
-      {/* 미리보기 영역 - 이전 버전 */}
-      {/* <div ref={scrollRef} style={{ height: "300vh" }}>
-        <div
-          style={{
-            position: isSticky ? "sticky" : "relative",
-            top: 0,
-            zIndex: 1100,
-            background: "black",
-            borderBottom: "1px solid #333",
-          }}
-        >
-          <PreviewHeader
-            selected={selectedPreview}
-            setSelected={handleSelected}
-          />
-        </div>
-
-        <div>
-          {selectedPreview === "card" && <Page />}
-          {selectedPreview === "page" && (
-            <div>
-              <MemorialPage />
-            </div>
-          )}
-        </div>
-
-        <button
-          onClick={() => {
-            console.log(isSelectModalOpen);
-            if (!user) setIsSelectModalOpen(true);
-            else setIsSelectModalOpenForAlreayCreated(true);
-          }}
-          style={{
-            position: isSticky ? "sticky" : "relative",
-            margin: "0 auto",
-            display: "block",
-            padding: "10px 30px",
-            borderRadius: 30,
-            height: 60,
-            fontSize: "1.25rem",
-            bottom: isSticky ? "30px" : "calc(200vh + 120px)",
-            zIndex: 2000,
-            background: MAIN_THEME,
-            borderBottom: "1px solid #333",
-          }}
-        >
-          직접 만들기
-        </button>
-        <SelectModal
-          type={type}
-          isOpen={isSelectModalOpen}
-          onClose={() => setIsSelectModalOpen(false)}
-          onStart={handleStart}
-        />
-        {user && initialData && (
-          <SelectModalForAlreadyCreated
-            type={type}
-            isOpen={isSelectModalOpenForAlreayCreated}
-            user={user}
-            initialData={initialData}
-            onClose={() => setIsSelectModalOpenForAlreayCreated(false)}
-            onStart={handleEdit}
-          />
-        )}
-        {authlayerVisible && (
-          <div>
-            <AuthOverlay
-              auth={auth}
-              firestore={firestore}
-              onAuthComplete={() => {
-                // router.push(`/${type === "card" ? "card" : "memorial"}`);
-                setAuthlayerVisible(false);
-                setIsSelectModalOpenForAlreayCreated(true);
-                setIsSelectModalOpen(false);
-              }}
-            />
-            <button
-              style={{
-                position: "fixed",
-                top: "30%",
-                left: "30%",
-                borderRadius: 20,
-                textDecoration: "underline",
-                padding: "8px 20px",
-                fontSize: "1rem",
-                border: "none",
-                cursor: "pointer",
-                color: "white",
-                transition: "all 0.3s ease",
-                zIndex: "1300",
-              }}
-              onClick={() => {
-                setAuthlayerVisible(false);
-                setIsSelectModalOpen(true);
-              }}
-            >
-              &lt;뒤로 가기
-            </button>
-          </div>
-        )}
-      </div> */}
     </div>
   );
 }

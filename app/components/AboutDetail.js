@@ -1,28 +1,68 @@
-// LifeCardHero.js
-import React from "react";
+"use client";
+import React, { useState } from "react";
 
 export default function LifeCardHero() {
+  const [activeTab, setActiveTab] = useState("records"); //활성화된 탭이 뭔지
+
   return (
     <div className="page">
       {/* Top tabs */}
+
       <div className="tabs">
-        <button className="tab active">The Life Card</button>
-        <button className="tab">The Life Wheel</button>
+        <button
+          className={`tab ${activeTab === "records" ? "active" : ""}`}
+          onClick={() => setActiveTab("records")}
+        >
+          The Life Records
+        </button>
+        <button
+          className={`tab ${activeTab === "reels" ? "active" : ""}`}
+          onClick={() => setActiveTab("reels")}
+        >
+          The Life Reels
+        </button>
       </div>
 
-      {/* Headline */}
-      <h1 className="headline">All your time, on one card</h1>
-      <p className="subhead">당신의 시간을, 한 장의 카드에.</p>
+      {activeTab === "records" && (
+        <>
+          <h1 className="headline">All your time, on one records</h1>
+          <p className="subhead">당신의 시간을, 한 장의 레코드에.</p>
 
-      {/* Card */}
-      <div className="card-wrap"></div>
+          <div className="img-wrap">
+            <img
+              className="image"
+              src="/images/main/life-records-img.png"
+              alt="image"
+            />
+          </div>
 
-      {/* Footer copy */}
-      <p className="footer-copy">
-        <strong>The Life Card</strong>는 당신의 삶에서 소중한 순간들을 한 장의
-        카드로 기록하는 디지털 아카이브입니다. 이름과 출생 정보, 내용, 연도별
-        타임라인, 사진을 기록하고, 링크와 QR로 쉽게 공유합니다.
-      </p>
+          <p className="footer-copy">
+            <strong>The Life Records</strong>는 당신의 삶에서 소중한 순간들을 한
+            장의 레코드로 기록하는 디지털 아카이브입니다. 이름과 출생 정보,
+            내용, 연도별 타임라인, 사진을 기록하고, 링크로 쉽게 공유합니다.
+          </p>
+        </>
+      )}
+      {activeTab === "reels" && (
+        <>
+          <h1 className="headline">All your time, on one reels</h1>
+          <p className="subhead">당신의 순간을, 하나의 릴스에.</p>
+
+          <div className="img-wrap">
+            <img
+              className="image"
+              src="/images/main/life-reels-img.png"
+              alt="image"
+            />
+          </div>
+
+          <p className="footer-copy">
+            <strong>The Life Reels</strong>는 소중한 관계와 순간을 영화처럼
+            이어붙인 디지털 아카이브입니다. 시간의 흐름 속에서 움직이는 추억을
+            담아내어, 당신만의 이야기를 감각적으로 기록하고 나눕니다.
+          </p>
+        </>
+      )}
 
       {/* CSS (scoped) */}
       <style jsx>{`
@@ -84,20 +124,27 @@ export default function LifeCardHero() {
           color: var(--muted);
           font-size: clamp(13px, 1.25vw, 16px);
           text-align: center;
+
+          color: #b5b5b5ff;
+          font-family: "Pretendard Variable";
+          font-size: 1rem;
+          font-style: normal;
+          font-weight: 400;
+          line-height: 150%;
+          letter-spacing: -0.03rem;
         }
 
-        .card-wrap {
-          width: min(920px, 92vw);
+        .img-wrap {
+          width: min(600px, 92vw);
           display: flex;
           justify-content: center;
-          margin: 10px 0 26px;
+          margin: 1rem 0 2rem;
         }
 
-        .card {
+        .image {
           position: relative;
           width: 100%;
-          background: linear-gradient(#fefefe, #f9f9f9);
-          border-radius: 14px;
+          border-radius: 1.25rem;
           overflow: hidden;
           box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6),
             0 2px 0 1px rgba(255, 255, 255, 0.04) inset;
@@ -244,6 +291,14 @@ export default function LifeCardHero() {
           color: #cfcfcf;
           font-size: 14px;
           line-height: 1.7;
+
+          color: #f2f2f2;
+          font-family: "Pretendard Variable";
+          font-size: 1rem;
+          font-style: normal;
+          font-weight: 300;
+          line-height: 150%;
+          letter-spacing: -0.05rem;
         }
 
         /* Responsiveness */
