@@ -162,7 +162,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
     });
     return () => unsub();
   }, []);
-  console.log(viewUid, uid)
+  console.log(viewUid, uid);
 
   const router = useRouter();
 
