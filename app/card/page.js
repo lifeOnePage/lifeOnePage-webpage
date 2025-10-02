@@ -137,9 +137,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
       if (!user) {
         // 로그아웃 상태 : editing mode가 아닌 view mode,
         setUid(viewUid);
-        setOwnerName("");
         setIsEditing(isMe);
-        setTimeline(INITIAL_TIMELINE);
         return;
       }
       // 로그인 상태: 사용자별 데이터 로드 후 편집 모드로 전환...
