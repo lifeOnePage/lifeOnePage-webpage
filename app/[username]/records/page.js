@@ -1,6 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
-import LifeRecord from "../../card/page.js";
+import LifeRecord from "../../card/LifeRecord";
 import { checkIsMe } from "../../utils/checkIsMe";
 import { useUser } from "../../contexts/UserContext";
 import { useEffect, useState } from "react";
