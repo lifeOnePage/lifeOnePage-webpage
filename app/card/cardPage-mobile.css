@@ -1,0 +1,239 @@
+/* 타블렛 가로 */
+@media (max-width: 1200px) {
+  .lr-grid {
+    grid-template-columns: 0.9fr minmax(300px, 400px) 0.9fr;
+  }
+  .lp-wrap {
+    left: -40%;
+  }
+}
+
+/* 타블렛 세로, 모바일 가로 */
+@media (max-width: 900px) {
+  .lr-grid {
+    grid-template-columns: 0.9fr minmax(300px, 400px) 0.9fr;
+  }
+  .lp-wrap {
+    left: -40%;
+  }
+}
+
+/* 모바일 세로 */
+@media (max-width: 600px) {
+  .lr-page {
+    padding: 3rem 2rem;
+    overflow: auto;
+    overflow-x: hidden;
+  }
+
+  .lr-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 35px;
+  }
+
+  .lr-left {
+    width: 100%;
+    order: 1;
+  }
+  .lr-center {
+    order: 2;
+  }
+  .lr-right {
+    order: 3;
+    min-height: auto;
+    display: block;
+
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding-bottom: 24px;
+    position: relative;
+  }
+
+  .bg-panel {
+    width: 100%;
+    margin-right: 1rem;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(2px);
+  }
+
+  .bg-swatches {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .lr-title {
+    text-align: left;
+    font-size: 2.8rem;
+    margin-bottom: 1rem;
+  }
+  .lr-sub {
+    margin-top: 0;
+    text-align: left;
+    font-size: 0.75rem;
+  }
+
+  /* center : 카드 부분 */
+
+  .lr-card {
+    padding: 16px;
+    border-radius: 0.25rem;
+  }
+  .lr-card-media {
+    height: auto;
+    margin-bottom: 10px;
+  }
+  .lr-cover {
+    height: 220px;
+    border-radius: 0.25rem;
+  }
+
+  .lr-playlist h4 {
+    font-size: 0.8rem;
+  }
+  .lr-playlist ol {
+    font-size: 0.6rem;
+  }
+
+  .lr-card-desc p {
+    height: 4.5rem;
+    font-size: 0.8rem;
+  }
+
+  .lr-name {
+    font-size: 2rem;
+    letter-spacing: -0.15rem;
+  }
+  .lr-date {
+    font-size: 1.6rem;
+    letter-spacing: -0.06rem;
+  }
+
+  /*============= bottom : LP판 부분 =============*/
+
+  .lp-wrap {
+    position: relative;
+    width: min(82vw, 400px);
+    cursor: default;
+
+    aspect-ratio: 1/1;
+    margin: 0 auto;
+    left: auto;
+    top: auto;
+    transform: translateY(-28vh);
+  }
+
+  .lp-disc {
+    width: min(80vw, 400px);
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    transition: transform 220ms ease-out;
+  }
+
+  .year-item {
+    font-size: 0.95rem;
+  }
+  .year-item.active {
+    font-size: 1rem;
+  }
+  .year-event {
+    margin-left: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .lp-disc {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 130%;
+    height: 100%;
+    transition: transform 220ms ease-out;
+    pointer-events: none;
+    transform: scale(2);
+  }
+  .year-item {
+    position: absolute;
+    transform-origin: 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    color: #bdbdbd;
+    cursor: pointer;
+  }
+  .year-item.active {
+    color: #fff;
+    font-size: 1rem;
+    align-items: center;
+    justify-content: center;
+  }
+  .year-item .year-event {
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .year-item.active .year-event {
+    display: block;
+    margin-top: 6px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lr-page[data-editing="true"] {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .footer {
+    position: fixed;
+    bottom: 3px;
+    gap: 0.5rem;
+    padding: 0rem 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .toolbar-anchor {
+    z-index: 10000;
+  }
+
+  .footer-logo,
+  .footer-copyright {
+    font-size: 0.6rem;
+  }
+
+  .login-btn-fixed {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .lr-highlight-item img {
+    height: 76px;
+  }
+
+  .lr-highlight-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 80px;
+    gap: 8px;
+  }
+
+  .year-circle {
+    position: absolute;
+    top: 50%;
+    left: 40vw;
+    width: 0;
+    height: 0;
+    transform: none;
+  }
+}
