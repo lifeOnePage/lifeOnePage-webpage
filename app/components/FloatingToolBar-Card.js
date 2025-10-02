@@ -23,6 +23,7 @@ import {
   IoIosArrowUp,
   IoIosLogOut,
   IoMdCheckmarkCircleOutline,
+  IoIosAddCircleOutline,
 } from "react-icons/io";
 import { MdOutlineManageAccounts } from "react-icons/md";
 import { useRouter } from "next/navigation";
@@ -143,7 +144,7 @@ export default function FloatingToolbar({
                 {
                   key: "add",
                   onClick: onAddTimeline,
-                  icon: <FiPlus size={20} />,
+                  icon: <IoIosAddCircleOutline size={20} />,
                   disabled: isPreview,
                 },
                 {
