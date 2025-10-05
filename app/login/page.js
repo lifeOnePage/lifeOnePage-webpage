@@ -235,7 +235,7 @@ export default function LoginPage() {
       setStage("otp");
     } catch (e) {
       console.error(e);
-      setError("인증번호 전송에 실패했어요. 다시 시도해주세요.");
+      setError("인증번호 전송에 실패했어요. 새로고침한 후 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
@@ -577,7 +577,7 @@ export default function LoginPage() {
                 <p
                   style={{
                     fontSize: "0.95rem",
-                    color: "#555",
+                    color: "#aaa",
                     margin: "8px 0px",
                   }}
                 >

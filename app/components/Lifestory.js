@@ -178,7 +178,7 @@ export default function LifestorySection({
           style: selectedStyle,
           questions,
           answers,
-          userName
+          userName,
         });
         setGeneratedStory(story);
         setHasSaved(false);
@@ -281,7 +281,7 @@ export default function LifestorySection({
               placeItems: "center",
               minHeight: "100vh",
               padding: 24,
-              background: "#fafafa",
+              background: BLACK,
             }}
           >
             <AnimatePresence mode="wait">
@@ -293,11 +293,12 @@ export default function LifestorySection({
                   animate="animate"
                   exit="exit"
                   style={{
-                    width: "min(960px, 92vw)",
-                    background: "#fff",
-                    border: "1px solid #e5e7eb",
+                    width: "min(768px, 92vw)",
+                    background: BLACK,
+                    // border: "1px solid #e5e7eb",
                     borderRadius: 14,
-                    boxShadow: "0 10px 28px rgba(0,0,0,0.06)",
+                    boxShadow: "0 28px 28px rgba(0,0,0,1)",
+                    background: "#1a1a1a",
                     padding: "28px 28px 30px",
                   }}
                 >
@@ -305,17 +306,35 @@ export default function LifestorySection({
                   <div
                     style={{
                       display: "flex",
-                      alignItems: "center",
+                      flexDirection:"column",
+                      alignItems: "flex-start",
                       gap: 10,
                       marginBottom: 10,
                     }}
                   >
-                    <div
-                      style={{ fontWeight: 800, fontSize: 18, color: "#111" }}
+                    
+                    <p
+                      style={{
+                        fontSize: "3rem",
+                        fontFamily: "Cormorant Garamond",
+                        fontStyle: "oblique 40deg",
+                      }}
+                    >
+                      <style>
+                        @import
+                        url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&display=swap');
+                      </style>
+                      Life story
+                    </p>
+                    <p style={{ color: "#aaa" }}>
+                      {userName}님의 생애문
+                    </p>
+                    {/* <div
+                      style={{ fontWeight: 800, fontSize: 18, color: "#fff" }}
                     >
                       {userName}님의 생애문
-                    </div>
-                    {selectedStyle && (
+                    </div> */}
+                    {/* {selectedStyle && (
                       <span
                         style={{
                           fontSize: 12,
@@ -328,7 +347,7 @@ export default function LifestorySection({
                       >
                         {selectedStyle}
                       </span>
-                    )}
+                    )} */}
                   </div>
 
                   {/* 본문 */}
@@ -336,8 +355,9 @@ export default function LifestorySection({
                     style={{
                       whiteSpace: "pre-wrap",
                       lineHeight: 1.85,
-                      fontSize: 18,
-                      color: "#1f2937",
+                      fontSize: 16,
+                      color: "#fafafa",
+                      fontStyle: "italic",
                     }}
                   >
                     {generatedStory}
@@ -354,7 +374,7 @@ export default function LifestorySection({
                     width: "min(780px, 92vw)",
                     textAlign: "center",
                     color: "#374151",
-                    background: "#fff",
+                    background: BLACK,
                     border: "1px dashed #d1d5db",
                     borderRadius: 14,
                     padding: "40px 24px",
@@ -639,7 +659,7 @@ export default function LifestorySection({
                         border: "1px dashed #9ca3af",
                         borderRadius: 12,
                         padding: 14,
-                        background: "#f8fafc",
+                        background: BLACK,
                         cursor: "text",
                         whiteSpace: "pre-wrap",
                         lineHeight: 1.6,
@@ -711,8 +731,8 @@ function StyleCard({ label, active, onClick }) {
       onClick={onClick}
       style={{
         ...card,
-        borderColor: BLACK,
-        boxShadow: active ? "0 0 0 3px rgba(255, 109, 109, 0.5)" : "none",
+        borderColor: active ? "fafafa" : "#fafafa11",
+        boxShadow: active ? "0 0 0 3px rgba(255, 255, 255, 0.5)" : "none",
       }}
     >
       <div style={{ fontSize: 18, fontWeight: 700 }}>{label}</div>
@@ -738,8 +758,8 @@ function CountCard({ label, active, onClick }) {
       onClick={onClick}
       style={{
         ...card,
-        borderColor: active ? BLACK : "#1a1a1a55",
-        boxShadow: active ? "0 0 0 3px rgba(255, 109, 109, 0.5)" : "none",
+        borderColor: active ? "fafafa" : "#fafafa11",
+        boxShadow: active ? "0 0 0 3px rgba(255, 255, 255, 0.5)" : "none",
       }}
     >
       <div style={{ fontSize: 18, fontWeight: 700 }}>{label}</div>
@@ -759,9 +779,9 @@ function Primary({ children, onClick, disabled }) {
         minWidth: 120,
         padding: "0 18px",
         borderRadius: 12,
-        border: "1px solid #1a1a1a",
-        background: disabled ? "#1a1a1a55" : "#1a1a1a",
-        color: "#fff",
+        border: "1px solid #444",
+        background: disabled ? "#fafafa22" : "#00000099",
+        color: disabled ? "#888" : "#fff",
         fontWeight: 800,
         cursor: disabled ? "not-allowed" : "pointer",
       }}
@@ -782,7 +802,7 @@ function Secondary({ children, onClick }) {
         minWidth: 100,
         padding: "0 16px",
         borderRadius: 12,
-        border: "1px solid #374151",
+        border: "1px solid #444",
         background: BLACK,
         color: "#e5e7eb",
         fontWeight: 700,
@@ -806,7 +826,7 @@ function ProgressDots({ total, current, onDotClick }) {
       {new Array(Math.max(total, 0)).fill(0).map((_, i) => {
         const state = i < current ? "done" : i === current ? "current" : "todo";
         const bg =
-          state === "done" ? BLACK : state === "current" ? "#1a1a1a33" : "none";
+          state === "done" ? "none" : state === "current" ? "#fafafa" : "none";
         const scale = state === "current" ? 1.2 : 1;
         return (
           <motion.button
@@ -818,7 +838,7 @@ function ProgressDots({ total, current, onDotClick }) {
               height: 12,
               borderRadius: 999,
               background: bg,
-              border: "1px solid #1a1a1a55",
+              border: "1px solid #fafafa",
               cursor: i <= current ? "pointer" : "default",
             }}
             animate={{ scale }}
@@ -843,7 +863,7 @@ function PrevButton({ onClick }) {
         left: -8,
         height: 40,
         borderRadius: 999,
-        color: BLACK,
+        color: "#fafafa",
         display: "flex",
         placeItems: "center",
         cursor: "pointer",
@@ -852,7 +872,7 @@ function PrevButton({ onClick }) {
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
         <path
           d="M15 18l-6-6 6-6"
-          stroke="#1a1a1a"
+          stroke="#fafafa"
           strokeWidth="1"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -898,8 +918,8 @@ const wrap = {
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  background: "#fafafa",
-  color: BLACK,
+  background: BLACK,
+  color: "#fafafa",
 };
 const sheet = {
   width: "100%",
@@ -928,16 +948,18 @@ const grid2 = {
 const card = {
   height: 120,
   borderRadius: 14,
-  border: "1px solid #262626",
-  background: "#fafafa",
+  border: "1px solid #fafafa55",
+  background: BLACK,
   padding: 16,
-  color: BLACK,
+  color: "#fafafa",
   textAlign: "left",
   cursor: "pointer",
 };
 const qaCard = {
   borderRadius: 14,
-  background: "#fafafa",
+  background: BLACK,
+  color: "#fafafa",
+  border: "1px solid #fafafa22",
   padding: 16,
 };
 const textarea = {
@@ -945,8 +967,8 @@ const textarea = {
   minHeight: 160,
   borderRadius: 12,
   border: "1px solid #374151",
-  background: "#fafafa",
-  color: BLACK,
+  background: BLACK,
+  color: "#fafafa",
   padding: 12,
   outline: "0.15rem dashed #6dacff44",
   fontSize: 16,

@@ -81,7 +81,7 @@ export default function GalleryHeader() {
       }}
     >
       <button
-        onClick={() => router.push(`/${initialData.username}`)}
+        onClick={() => router.push(`/${initialData.username}/reels`)}
         style={{
           background: "none",
           border: "none",
