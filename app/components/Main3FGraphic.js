@@ -417,7 +417,7 @@ function SceneContent({
       />
       <ImageRing hovered={hoveredRing} onPreviewRequest={onPreviewRequest} />
 
-      <OrbitControls enableZoom={false} enablePan={false} />
+      <OrbitControls enabled={false} enableZoom={false} enablePan={false} />
     </>
   );
 }

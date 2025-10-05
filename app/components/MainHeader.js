@@ -25,9 +25,9 @@ export default function MainHeader({ setMode, setTrigger }) {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        // borderBottom: "1px solid #ffffff",
+        borderBottom: "1px solid #ffffff",
         padding: "0 16px",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#00000099",
         position: "fixed",
         top: 0,
         left: 0,
@@ -41,11 +41,12 @@ export default function MainHeader({ setMode, setTrigger }) {
       <div
         style={{
           flex: 1,
-          borderRight: "2px solid #1a1a1a",
+          // borderRight: "2px solid #1a1a1a",
           fontWeight: 500,
+          color:"#fff"
         }}
       >
-        The Life Gallery
+        The Life Museum
       </div>
       <div
         style={{
@@ -54,6 +55,7 @@ export default function MainHeader({ setMode, setTrigger }) {
           flex: 1,
           display: "flex",
           fontWeight: 500,
+          color:"#fff"
         }}
       >
         <div
