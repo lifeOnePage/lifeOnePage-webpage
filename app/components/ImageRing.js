@@ -202,8 +202,8 @@ function ImageRingComponent(
     const right = new THREE.Vector3().crossVectors(forward, up).normalize();
 
     const offset = new THREE.Vector3()
-      .add(forward.clone().multiplyScalar(200))
-      .add(right.clone().multiplyScalar(-50))
+      .add(forward.clone().multiplyScalar(180))
+      .add(right.clone().multiplyScalar(-60))
       .add(up.clone().multiplyScalar(70));
 
     // 목적지 위치

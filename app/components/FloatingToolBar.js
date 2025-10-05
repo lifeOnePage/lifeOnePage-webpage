@@ -4,26 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FiEye,
   FiEyeOff,
-  FiMaximize2,
-  FiMinimize,
-  FiMinimize2,
   FiSave,
 } from "react-icons/fi";
-import {
-  FaAngleDown,
-  FaAngleUp,
-  FaChevronDown,
-  FaChevronUp,
-} from "react-icons/fa";
-import {
-  IoIosArrowBack,
-  IoIosArrowDown,
-  IoIosArrowForward,
-  IoIosArrowUp,
-  IoIosLogOut,
-  IoMdCheckmarkCircleOutline,
-} from "react-icons/io";
-import { MdOutlineManageAccounts, MdPerson } from "react-icons/md";
+import { IoIosArrowBack, IoIosArrowForward, IoIosLogOut } from "react-icons/io";
+import { IoMdCheckmarkCircleOutline } from "react-icons/io";
+import { MdPerson } from "react-icons/md";
 import { useRouter } from "next/navigation";
 
 export default function FloatingToolbar({
@@ -62,13 +47,14 @@ export default function FloatingToolbar({
     whiteSpace: "nowrap",
     zIndex: 10,
   };
-  const router = useRouter(); 
+  const router = useRouter();
   const onClickMypage = () => {
     if (isUpdated) alert("저장되지 않은 변경사항이 있습니다.");
     else {
       router.push(`/mypage`);
     }
   };
+
   return (
     <motion.div
       initial={{ y: 100 }}
@@ -79,9 +65,10 @@ export default function FloatingToolbar({
         left: 0,
         width: "100vw",
         display: "flex",
-        justifyContent: "center",
+        justifyContent: "flex-start", // ✅ 중앙 정렬 → 왼쪽 정렬
+        paddingLeft: 24,               // ✅ 좌측 여백
         zIndex: 1000,
-        pointerEvents: "none", // 툴바가 아닌 공간은 클릭 안되도록
+        pointerEvents: "none", // 툴바가 아닌 공간은 클릭 통과
       }}
     >
       <motion.div
@@ -97,7 +84,8 @@ export default function FloatingToolbar({
           alignItems: "center",
           gap: "30px",
           boxShadow: "0px 4px 16px rgba(0,0,0,0.4)",
-          // overflow: "hidden", // 너비 줄 때 내부 잘리도록
+          transformOrigin: "left center", // ✅ 왼쪽 기준으로 펼쳐짐
+          // overflow: "hidden",
         }}
       >
         {/* 접기/펼치기 */}
@@ -115,7 +103,7 @@ export default function FloatingToolbar({
             style={{ cursor: "pointer" }}
             onClick={() => setCollapsed(!collapsed)}
           >
-            {collapsed ? <IoIosArrowForward size={20} /> : <IoIosArrowBack  size={20} />}
+            {collapsed ? <IoIosArrowForward size={20} /> : <IoIosArrowBack size={20} />}
           </button>
         </div>
 
@@ -123,18 +111,6 @@ export default function FloatingToolbar({
           {!collapsed && (
             <>
               {[
-                // {
-                //   key: "up",
-                //   onClick: onScrollUp,
-                //   icon: <IoIosArrowUp size={20} />,
-                //   disabled: isTop,
-                // },
-                // {
-                //   key: "down",
-                //   onClick: onScrollDown,
-                //   icon: <IoIosArrowDown size={20} />,
-                //   disabled: isBottom,
-                // },
                 {
                   key: "mypage",
                   onClick: onClickMypage,
@@ -144,11 +120,7 @@ export default function FloatingToolbar({
                 {
                   key: "preview",
                   onClick: () => setIsPreview(!isPreview),
-                  icon: isPreview ? (
-                    <FiEyeOff size={20} />
-                  ) : (
-                    <FiEye size={20} />
-                  ),
+                  icon: isPreview ? <FiEyeOff size={20} /> : <FiEye size={20} />,
                 },
                 {
                   key: "save",
@@ -162,7 +134,7 @@ export default function FloatingToolbar({
                   icon: isUpdated ? (
                     <FiSave size={20} />
                   ) : (
-                    <IoMdCheckmarkCircleOutline size={20} />
+                    <FiSave size={20} />
                   ),
                   disabled: !isUpdated,
                 },

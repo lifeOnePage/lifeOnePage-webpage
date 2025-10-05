@@ -547,6 +547,34 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
               }}
             >
               <div style={leftPaneStyle}>
+                <p style={{ fontSize: "3rem", fontFamily:"Cormorant Garamond", fontStyle:"oblique 40deg" }}>
+                  <style>
+                    @import
+                    url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&display=swap');
+                  </style>
+                  Life-Reels
+                </p>
+                <p style={{color:"#aaa"}}>
+                  Life-Reels는 소중한 기억을 한 곳에 모아 만들어진 {person.name}님만의 특별한 영화입니다.
+                </p>
+              </div>
+              <GalleryNav
+                person={person}
+                activeCategory={activeCategory}
+                activeSubCategory={activeSubCategory}
+                forcedCategory={forcedCategory}
+                forcedSubcategory={forcedSubcategory}
+                onCategoryClick={handleCategoryClick}
+                onLockCategory={handleLockCategory}
+                onSubcategoryClick={handleSubcategoryClick}
+                onLockSubcategory={handleLockSubcategory}
+              />
+              {/* <p style={{ margin:20, color: "#fefefe", fontSize: "1rem" }}>
+                  {person.name}님의 영상기록관
+                </p> */}
+
+              {/* 2) ThreeFiberScene (오른쪽으로 이동) */}
+              <div style={leftPaneStyle}>
                 {/* <div
                   style={{
                     color: "#fefefe",
@@ -584,22 +612,6 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
                   </button>
                 )}
               </div>
-              <GalleryNav
-                person={person}
-                activeCategory={activeCategory}
-                activeSubCategory={activeSubCategory}
-                forcedCategory={forcedCategory}
-                forcedSubcategory={forcedSubcategory}
-                onCategoryClick={handleCategoryClick}
-                onLockCategory={handleLockCategory}
-                onSubcategoryClick={handleSubcategoryClick}
-                onLockSubcategory={handleLockSubcategory}
-              />
-              {/* <p style={{ margin:20, color: "#fefefe", fontSize: "1rem" }}>
-                  {person.name}님의 영상기록관
-                </p> */}
-
-              {/* 2) ThreeFiberScene (오른쪽으로 이동) */}
               <div style={rightPaneStyle}>
                 <Canvas
                   camera={{ position: [0, 10, 400], fov: 75 }}
@@ -611,9 +623,11 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
                   <OrbitControls
                     ref={controlsRef}
                     enableZoom={false}
+                    enablePan={false}
                     // onChange: 카메라 조작 중 실시간 업데이트가 필요하다면
                     // onEnd: 조작이 끝난 뒤 한 번만
                     enabled={!isRotating}
+                    // enabled={false}
                     minPolarAngle={Math.PI / 3} // 아래로 내려가는 각도 제한
                     maxPolarAngle={Math.PI / 3} // 위로 올라가는 각도 제한
                     onChange={handleChangeControls}
