@@ -104,7 +104,7 @@ export default function ChildhoodGallery({
   const isUploadDisabled = images.length >= MAX_IMAGES;
 
   return (
-    <div style={{ padding: "16px" }}>
+    <div style={{ padding: "16px", color: "#fff" }}>
       {showLargeFileDialog && (
         <LargeFileDialog
           files={largeFiles}
@@ -112,7 +112,7 @@ export default function ChildhoodGallery({
         />
       )}
 
-      <h3>
+      <h3 style={{}}>
         함께 공유하고 싶은 유년시절 사진을 올려주세요. 최대 {MAX_IMAGES}장까지
         올릴 수 있어요.
       </h3>
@@ -127,7 +127,7 @@ export default function ChildhoodGallery({
       >
         <input
           type="file"
-          accept="image/*,video/*"
+          accept="image/*"
           multiple
           onChange={handleFileChange}
           ref={fileInputRef}

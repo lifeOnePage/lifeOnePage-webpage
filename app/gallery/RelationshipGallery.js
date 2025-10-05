@@ -235,6 +235,7 @@ export default function RelationshipGallery({
           justifyContent: "space-between",
           gap: 10,
           marginBottom: 20,
+          color:"#fff"
         }}
       >
         <h3 style={{ flex: 1 }}>
@@ -352,6 +353,7 @@ export default function RelationshipGallery({
                 borderRadius: 16,
                 position: "relative",
                 paddingTop: 40,
+                color:"#fff"
               }}
             >
               <div
@@ -671,7 +673,7 @@ export default function RelationshipGallery({
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,video/*"
+        accept="image/*"
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
