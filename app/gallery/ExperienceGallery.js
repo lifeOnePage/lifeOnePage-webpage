@@ -181,9 +181,14 @@ export default function ExperienceGallery({
     setHasUnsavedChanges(false);
     setUploadProgress(0);
   };
+  Object.entries(items)
+            .reverse()
+            .map(([it,i])=> {
+              console.log(it, i)
+            })
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: 20, color: "#fff" }}>
       {showLargeFileDialog && (
         <LargeFileDialog
           files={largeFiles}
@@ -248,11 +253,11 @@ export default function ExperienceGallery({
               display: "flex",
               alignItems: "center",
               gap: 6,
-              color: "#888",
+              color: "#ccc",
             }}
           >
             <FiCheckCircle color={MAIN_THEME} />
-            <span style={{ fontSize: "0.9rem", color: "#888" }}>
+            <span style={{ fontSize: "0.9rem", color: "#ccc" }}>
               모든 변경사항이 저장되었습니다
             </span>
           </div>
@@ -300,171 +305,175 @@ export default function ExperienceGallery({
             gap: 20,
           }}
         >
-          {items.map((it, i) => (
-            <div
-              key={i}
-              style={{
-                flex: "1 1 calc(30% - 20px)",
-                backgroundColor: "#56565611",
-                border: "1px solid #aaa",
-                borderRadius: "10px",
-                padding: "16px",
-                position: "relative",
-                boxSizing: "border-box",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <div
-                  onClick={() => deleteItem(i)}
-                  style={{
-                    marginBottom: "10px",
-                    display: "inline-flex",
-                    cursor: "pointer",
-                    padding: 4,
-                    borderRadius: "50%",
-                    background: "rgba(0,0,0,0.5)",
-                  }}
-                >
-                  <FiTrash2 color="#fff" />
-                </div>
-              </div>
-
-              <div style={{ position: "relative" }}>
-                <input
-                  maxLength={20}
-                  placeholder="경험 제목"
-                  value={it.title}
-                  onChange={(e) => updateItem(i, "title", e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "6px 10px",
-                    borderRadius: "10px",
-                    outline: "0.1rem dashed #888",
-                  }}
-                />
-                <span
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    fontSize: "0.75rem",
-                    color: "#999",
-                  }}
-                >
-                  {it.title.length}/20
-                </span>
-              </div>
-
-              <div style={{ position: "relative", marginTop: 8 }}>
-                <textarea
-                  maxLength={60}
-                  placeholder="설명"
-                  rows={3}
-                  value={it.description}
-                  onChange={(e) => updateItem(i, "description", e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "6px 10px",
-                    borderRadius: "10px",
-                    outline: "0.1rem dashed #888",
-                  }}
-                />
-                <span
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    fontSize: "0.75rem",
-                    color: "#999",
-                  }}
-                >
-                  {it.description.length}/60
-                </span>
-              </div>
-
+          {Object.entries(items)
+            .reverse()
+            .map(([i, it]) => (
               <div
-                onClick={() => handleFiUploadClick(i)}
+                key={i}
                 style={{
-                  background: "rgba(0,0,0,0.5)",
-                  padding: "10px 20px",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontSize: "0.9rem",
-                  color: "#fff",
-                  cursor: "pointer",
-                  marginTop: 10,
-                  border: "1px solid #555",
+                  flex: "1 1 calc(30% - 20px)",
+                  backgroundColor: "#56565611",
+                  border: "1px solid #aaa",
+                  borderRadius: "10px",
+                  padding: "16px",
+                  position: "relative",
+                  boxSizing: "border-box",
                 }}
               >
-                <FiUpload /> 이미지/동영상 업로드
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: 8,
-                  marginTop: 10,
-                }}
-              >
-                {it.photos.map((photo, pi) => (
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <div
-                    key={pi}
+                    onClick={() => deleteItem(i)}
                     style={{
-                      position: "relative",
-                      aspectRatio: "1 / 1",
-                      overflow: "hidden",
-                      borderRadius: "6px",
-                      border: "1px solid #ccc",
+                      marginBottom: "10px",
+                      display: "inline-flex",
+                      cursor: "pointer",
+                      padding: 4,
+                      borderRadius: "50%",
+                      background: "rgba(0,0,0,0.5)",
                     }}
                   >
-                    <img
-                      src={photo.url}
-                      alt=""
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
+                    <FiTrash2 color="#fff" />
+                  </div>
+                </div>
+
+                <div style={{ position: "relative" }}>
+                  <input
+                    maxLength={20}
+                    placeholder="경험 제목"
+                    value={it.title}
+                    onChange={(e) => updateItem(i, "title", e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "6px 10px",
+                      borderRadius: "10px",
+                      outline: "0.1rem dashed #888",
+                    }}
+                  />
+                  <span
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      fontSize: "0.75rem",
+                      color: "#999",
+                    }}
+                  >
+                    {it.title.length}/20
+                  </span>
+                </div>
+
+                <div style={{ position: "relative", marginTop: 8 }}>
+                  <textarea
+                    maxLength={60}
+                    placeholder="설명"
+                    rows={3}
+                    value={it.description}
+                    onChange={(e) =>
+                      updateItem(i, "description", e.target.value)
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "6px 10px",
+                      borderRadius: "10px",
+                      outline: "0.1rem dashed #888",
+                    }}
+                  />
+                  <span
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      fontSize: "0.75rem",
+                      color: "#999",
+                    }}
+                  >
+                    {it.description.length}/60
+                  </span>
+                </div>
+
+                <div
+                  onClick={() => handleFiUploadClick(i)}
+                  style={{
+                    background: "rgba(0,0,0,0.5)",
+                    padding: "10px 20px",
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "0.9rem",
+                    color: "#fff",
+                    cursor: "pointer",
+                    marginTop: 10,
+                    border: "1px solid #555",
+                  }}
+                >
+                  <FiUpload /> 이미지/동영상 업로드
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, 1fr)",
+                    gap: 8,
+                    marginTop: 10,
+                  }}
+                >
+                  {it.photos.map((photo, pi) => (
                     <div
-                      onClick={() => handleDeletePhoto(i, pi)}
+                      key={pi}
                       style={{
-                        position: "absolute",
-                        top: 4,
-                        right: 4,
-                        background: "rgba(0,0,0,0.5)",
-                        borderRadius: "50%",
-                        padding: 4,
-                        cursor: "pointer",
+                        position: "relative",
+                        aspectRatio: "1 / 1",
+                        overflow: "hidden",
+                        borderRadius: "6px",
+                        border: "1px solid #ccc",
                       }}
                     >
-                      <FiTrash2 color="#fff" />
+                      <img
+                        src={photo.url}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                      <div
+                        onClick={() => handleDeletePhoto(i, pi)}
+                        style={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          background: "rgba(0,0,0,0.5)",
+                          borderRadius: "50%",
+                          padding: 4,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <FiTrash2 color="#fff" />
+                      </div>
+                      <input
+                        value={photo.caption}
+                        onChange={(e) =>
+                          handleCaptionChange(i, pi, e.target.value)
+                        }
+                        placeholder="캡션"
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          width: "100%",
+                          border: "none",
+                          borderTop: "1px solid #888",
+                          padding: "4px 6px",
+                          fontSize: "0.75rem",
+                          color: "white",
+                          backgroundColor: "rgba(0,0,0,0.5)",
+                          outline: "none",
+                        }}
+                      />
                     </div>
-                    <input
-                      value={photo.caption}
-                      onChange={(e) =>
-                        handleCaptionChange(i, pi, e.target.value)
-                      }
-                      placeholder="캡션"
-                      style={{
-                        position: "absolute",
-                        bottom: 0,
-                        width: "100%",
-                        border: "none",
-                        borderTop: "1px solid #888",
-                        padding: "4px 6px",
-                        fontSize: "0.75rem",
-                        color: "white",
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        outline: "none",
-                      }}
-                    />
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
 
@@ -472,7 +481,7 @@ export default function ExperienceGallery({
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,video/*"
+        accept="image/*"
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
