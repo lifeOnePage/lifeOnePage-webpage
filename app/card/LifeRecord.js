@@ -332,7 +332,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
         item[field] = value;
       }
       next[activeIdx] = item;
-      return next;
+      return sortTimeline(next);
     });
     setIsUpdated(true);
   };
@@ -373,7 +373,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
             delete next._file;
             delete next._fileType;
           }
-          return next;
+          return sortTimeline(next);
         })
       );
 
@@ -418,7 +418,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
         ...next[activeIdx],
         isHighlight: !next[activeIdx].isHighlight,
       };
-      return next;
+      return sortTimeline(next);
     });
     setIsUpdated(true);
   };
@@ -434,7 +434,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
         const next = prev.filter((_, i) => i !== activeIdx);
         const newIdx = Math.max(0, Math.min(activeIdx, next.length - 1));
         setActiveIdx(newIdx);
-        return next;
+        return sortTimeline(next);
       });
 
       setIsUpdated(true);
@@ -443,6 +443,18 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
       console.error("타임라인 삭제 중 오류:", error);
       alert("삭제 중 오류가 발생했습니다.");
     }
+  };
+  //타임라인 정렬
+  const sortTimeline = (list) => {
+    const mainItem = list.find((it) => it.kind === "main");
+    const others = list
+      .filter((it) => it.kind !== "main")
+      .sort((a, b) => {
+        const yearA = parseInt(a.date?.split(".")[0] || a.label, 10);
+        const yearB = parseInt(b.date?.split(".")[0] || b.label, 10);
+        return yearA - yearB;
+      });
+    return mainItem ? [mainItem, ...others] : others;
   };
 
   /* =========================
@@ -453,7 +465,7 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
       const next = [...prev, newItem];
       const idx = next.length - 1;
       requestAnimationFrame(() => snapToIndex(idx));
-      return next;
+      return sortTimeline(next);
     });
   };
 
