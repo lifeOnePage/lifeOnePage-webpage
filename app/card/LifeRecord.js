@@ -12,6 +12,7 @@ import {
   upsertTimelineBulk,
   uploadTimelineFile,
   fetchUserName,
+  deleteTimelineItem,
 } from "../utils/firebaseDb-records";
 
 /* =========================
@@ -321,6 +322,10 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
         item.isImageUpdated = true;
       } else if (field === "date") {
         item.date = value;
+        const [y] = value.split(".");
+        if (item.kind === "year" && y) {
+          item.label = y;
+        }
       } else if (field === "isHighlight") {
         item.isHighlight = value;
       } else {
@@ -418,15 +423,26 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
     setIsUpdated(true);
   };
 
-  const handleDeleteActive = () => {
+  const handleDeleteActive = async () => {
     if (activeItem?.kind === "main" || timeline.length <= 1) return;
-    setTimeline((prev) => {
-      const next = prev.filter((_, i) => i !== activeIdx);
-      const newIdx = Math.max(0, Math.min(activeIdx, next.length - 1));
-      setActiveIdx(newIdx);
-      return next;
-    });
-    setIsUpdated(true);
+    const confirmDelete = confirm("정말 이 타임라인을 삭제하시겠습니까?");
+    if (!confirmDelete) return;
+    try {
+      await deleteTimelineItem(uid, activeItem.id);
+
+      setTimeline((prev) => {
+        const next = prev.filter((_, i) => i !== activeIdx);
+        const newIdx = Math.max(0, Math.min(activeIdx, next.length - 1));
+        setActiveIdx(newIdx);
+        return next;
+      });
+
+      setIsUpdated(true);
+      alert("삭제되었습니다.");
+    } catch (error) {
+      console.error("타임라인 삭제 중 오류:", error);
+      alert("삭제 중 오류가 발생했습니다.");
+    }
   };
 
   /* =========================
