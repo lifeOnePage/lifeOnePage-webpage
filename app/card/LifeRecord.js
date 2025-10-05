@@ -442,6 +442,10 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
   };
 
   console.log(viewUid, viewData, isEditing, isMe);
+  const mainTitle = useMemo(() => {
+    const mainItem = timeline.find((it) => it.kind === "main");
+    return mainItem?.title || "사용자의 이야기";
+  }, [timeline]);
   return (
     <main
       className="lr-page"
@@ -589,11 +593,11 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
                     {activeItem.kind === "main" ? (
                       <>
                         <div className="lr-meta lr-meta--mainTop">
-                          <div className="lr-name">{ownerName || "사용자"}</div>
-                          <div className="lr-date">
+                          <div className="lr-name">{mainTitle}</div>
+                          {/* <div className="lr-date">
                             {getYear(activeItem.date)}
                             {toMonthDay(activeItem.date)}
-                          </div>
+                          </div> */}
                         </div>
                         <p>{activeItem.desc}</p>
                       </>
@@ -606,9 +610,16 @@ export default function LifeRecord({ viewUid, viewData, isMe }) {
                               ? activeItem.event
                               : "최아텍"}
                           </div>
-                          <div className="lr-date">
-                            {getYear(activeItem.date)}
-                            {toMonthDay(activeItem.date)}
+                          <div className="lr-date-location">
+                            <div className="lr-date">
+                              {getYear(activeItem.date)}
+                              {toMonthDay(activeItem.date)}
+                            </div>
+                            {activeItem.location && (
+                              <div className="lr-location">
+                                {activeItem.location}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </>
