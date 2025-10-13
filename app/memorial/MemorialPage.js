@@ -26,7 +26,7 @@ import {
 import FloatingToolbar from "../components/FloatingToolBar";
 import SuccessOverlay from "../components/SuccessOverlay";
 import ScrollUpOneViewportButton from "../components/ScrollUpOneViewportButton";
-import ScrollAffordance from "../components/ScrollAffordance"
+// import ScrollAffordance from "../components/ScrollAffordance"
 import GalleryNav from "../components/GalleryNav";
 import { useRouter } from "next/navigation";
 import { BLACK } from "../styles/colorConfig";
@@ -106,7 +106,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
 
   //   return false;
   // };
-  console.log(document)
+  // console.log(document)
 
   useEffect(() => {
     if (!initialData) {
@@ -433,7 +433,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         overscrollBehaviorY: "contain",
       }}
     >
-      <ScrollAffordance
+      {/* <ScrollAffordance
         containerRef={scrollerRef} // 특정 컨테이너 스크롤 유도 (생략 시 window)
         message="스크롤하면 더 많은 내용이 있어요"
         showDuration={3000} // 3초
@@ -441,7 +441,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         position="bottom" // 또는 "top"
         oncePerSession={true} // 세션당 1회
         onceKey="home-scroll-hint"
-      />
+      /> */}
       <ScrollUpOneViewportButton step={1} />
       {isMe && (
         <FloatingToolbar
