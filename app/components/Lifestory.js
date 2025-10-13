@@ -373,7 +373,7 @@ export default function LifestorySection({
                   style={{
                     width: "min(780px, 92vw)",
                     textAlign: "center",
-                    color: "#374151",
+                    color: "#888",
                     background: BLACK,
                     border: "1px dashed #d1d5db",
                     borderRadius: 14,
@@ -385,7 +385,7 @@ export default function LifestorySection({
                       margin: 0,
                       fontSize: 20,
                       fontWeight: 700,
-                      color: "#111",
+                      color: "#fff",
                     }}
                   >
                     아직 생애문이 작성되지 않았어요

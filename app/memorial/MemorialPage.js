@@ -27,6 +27,7 @@ import {
 import FloatingToolbar from "../components/FloatingToolBar";
 import SuccessOverlay from "../components/SuccessOverlay";
 import ScrollUpOneViewportButton from "../components/ScrollUpOneViewportButton";
+import ScrollAffordance from "../components/ScrollAffordance"
 import GalleryNav from "../components/GalleryNav";
 import { useRouter } from "next/navigation";
 import { BLACK } from "../styles/colorConfig";
@@ -75,6 +76,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
 
   const topImageRef = useRef();
   const controlsRef = useRef(null);
+  const scrollerRef = useRef(null);
   const ringRef = useRef();
 
   const { setDataLoading } = useUser();
@@ -421,6 +423,7 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
 
   return (
     <div
+      ref={scrollerRef}
       style={{
         position: "relative",
         fontFamily: "pretendard",
@@ -429,6 +432,15 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
         overscrollBehaviorY: "contain",
       }}
     >
+      <ScrollAffordance
+        containerRef={scrollerRef} // 특정 컨테이너 스크롤 유도 (생략 시 window)
+        message="스크롤하면 더 많은 내용이 있어요"
+        showDuration={3000} // 3초
+        nudgeDistance={80} // 살짝 더 크게
+        position="bottom" // 또는 "top"
+        oncePerSession={true} // 세션당 1회
+        onceKey="home-scroll-hint"
+      />
       <ScrollUpOneViewportButton step={1} />
       {isMe && (
         <FloatingToolbar
@@ -547,15 +559,22 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
               }}
             >
               <div style={leftPaneStyle}>
-                <p style={{ fontSize: "3rem", fontFamily:"Cormorant Garamond", fontStyle:"oblique 40deg" }}>
+                <p
+                  style={{
+                    fontSize: "3rem",
+                    fontFamily: "Cormorant Garamond",
+                    fontStyle: "oblique 40deg",
+                  }}
+                >
                   <style>
                     @import
                     url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&display=swap');
                   </style>
                   Life-Reels
                 </p>
-                <p style={{color:"#aaa"}}>
-                  Life-Reels는 소중한 기억을 한 곳에 모아 만들어진 {person.name}님만의 특별한 영화입니다.
+                <p style={{ color: "#aaa" }}>
+                  Life-Reels는 소중한 기억을 한 곳에 모아 만들어진 {person.name}
+                  님만의 특별한 영화입니다.
                 </p>
               </div>
               <GalleryNav
