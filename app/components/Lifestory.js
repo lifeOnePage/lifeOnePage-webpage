@@ -318,13 +318,14 @@ export default function LifestorySection({
                         fontSize: "3rem",
                         fontFamily: "Cormorant Garamond",
                         fontStyle: "oblique 40deg",
+                        color:"#fff"
                       }}
                     >
                       <style>
                         @import
                         url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&display=swap');
                       </style>
-                      Life story
+                      Life-story
                     </p>
                     <p style={{ color: "#aaa" }}>
                       {userName}님의 생애문
@@ -373,7 +374,7 @@ export default function LifestorySection({
                   style={{
                     width: "min(780px, 92vw)",
                     textAlign: "center",
-                    color: "#374151",
+                    color: "#888",
                     background: BLACK,
                     border: "1px dashed #d1d5db",
                     borderRadius: 14,
@@ -385,7 +386,7 @@ export default function LifestorySection({
                       margin: 0,
                       fontSize: 20,
                       fontWeight: 700,
-                      color: "#111",
+                      color: "#fff",
                     }}
                   >
                     아직 생애문이 작성되지 않았어요
