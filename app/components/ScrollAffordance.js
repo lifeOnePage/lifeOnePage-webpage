@@ -3,17 +3,18 @@ import { useEffect, useRef, useState } from "react"; // react (external)
 import { AnimatePresence, motion } from "framer-motion"; // framer-motion (external)
 
 export default function ScrollAffordance({
-  containerRef = null,          // 스크롤 컨테이너 ref (없으면 window 사용)
+  containerRef = null, // 스크롤 컨테이너 ref (없으면 window 사용)
   message = "아래로 스크롤해 보세요",
-  showDuration = 3000,          // 버블 표시 시간(ms)
-  nudgeDistance = 60,           // 자동 스크롤 넛지 거리(px)
-  nudgeDelay = 400,             // 마운트 후 넛지까지 지연(ms)
-  oncePerSession = true,        // 세션당 1회만 표시
+  showDuration = 3000, // 버블 표시 시간(ms)
+  nudgeDistance = 60, // 자동 스크롤 넛지 거리(px)
+  nudgeDelay = 400, // 마운트 후 넛지까지 지연(ms)
+  oncePerSession = true, // 세션당 1회만 표시
   onceKey = "scroll-affordance-shown", // 세션 키
-  position = "bottom",          // "bottom" | "top"
+  position = "bottom", // "bottom" | "top"
 }) {
   const [visible, setVisible] = useState(false);
   const timers = useRef({});
+  console.log(containerRef);
 
   // SSR 안전한 document/scrollElement 얻기
   const getScrollEl = () => {
@@ -25,8 +26,10 @@ export default function ScrollAffordance({
 
   const isScrollable = (el) => {
     if (!el) return false;
-    const canScrollY =
-      (el.scrollHeight || 0) - (el.clientHeight || 0) > 4; // 약간의 여유
+    console.log(el.scrollHeight || 0)
+    console.log(el.clientHeight || 0)
+    const canScrollY = (el.scrollHeight || 0) - (el.clientHeight || 0) > 4; // 약간의 여유
+
     return canScrollY;
   };
 
@@ -56,7 +59,10 @@ export default function ScrollAffordance({
     if (oncePerSession && sessionStorage.getItem(onceKey)) return;
 
     const el = getScrollEl();
-    if (!isScrollable(el)) return; // 스크롤 불가면 아무것도 안 함
+    // if (!isScrollable(el)) {
+    //   console.log("no scroll")
+    //   return;
+    // } // 스크롤 불가면 아무것도 안 함
 
     // 넛지 + 버블 표시
     timers.current.nudgeStart = setTimeout(() => doNudge(el), nudgeDelay);
@@ -65,10 +71,10 @@ export default function ScrollAffordance({
     if (oncePerSession) sessionStorage.setItem(onceKey, "1");
 
     // showDuration 뒤 자동 닫기
-    timers.current.hide = setTimeout(() => setVisible(false), showDuration);
+    // timers.current.hide = setTimeout(() => setVisible(false), showDuration);
 
     // 사용자가 스크롤하면 즉시 닫기
-    const onUserScroll = () => setVisible(false);
+    // const onUserScroll = () => setVisible(false);
     const target = containerRef?.current || window;
     target.addEventListener("scroll", onUserScroll, { passive: true });
 
@@ -91,7 +97,7 @@ export default function ScrollAffordance({
         transform: "translateX(-50%)",
         bottom: position === "bottom" ? 28 : "auto",
         top: position === "top" ? 28 : "auto",
-        zIndex: 9999,
+        zIndex: 100000,
         pointerEvents: "none",
       }}
     >
@@ -107,7 +113,8 @@ export default function ScrollAffordance({
           backdropFilter: "saturate(160%) blur(2px)",
           maxWidth: 260,
           textAlign: "center",
-          fontFamily: "Pretendard, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif",
+          fontFamily:
+            "Pretendard, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif",
         }}
       >
         {message}

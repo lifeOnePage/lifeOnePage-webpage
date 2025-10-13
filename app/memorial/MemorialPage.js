@@ -2,7 +2,6 @@
 import React, { act, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import svgIllustration from "../../public/graphic.svg";
-import ImageSlider from "./ImageSlider";
 import ThreeFiberScene from "../components/ThreeScene";
 import useWindowSize from "../hooks/useWindowSize";
 import { motion } from "framer-motion";
@@ -91,21 +90,23 @@ const MemorialPage = ({ uid, initialData, isMe }) => {
     return Array.from({ length: 2 }, (_, i) => `/videos/video${i}.mp4`);
   }, []);
 
-  const isTypingIntoEditable = (e) => {
-    const el = e.target || document.activeElement;
-    if (!el) return false;
-    if (el.isContentEditable) return true;
-    const closestEditable = el.closest?.(
-      '[contenteditable="true"], [role="textbox"]'
-    );
-    if (closestEditable) return true;
 
-    const tag = (el.tagName || "").toLowerCase();
-    if (tag === "textarea") return true;
-    if (tag === "input") return true; // 모든 input에서 스냅 키 무시(안전)
+  // const isTypingIntoEditable = (e) => {
+  //   const el = e.target || document.activeElement;
+  //   if (!el) return false;
+  //   if (el.isContentEditable) return true;
+  //   const closestEditable = el.closest?.(
+  //     '[contenteditable="true"], [role="textbox"]'
+  //   );
+  //   if (closestEditable) return true;
 
-    return false;
-  };
+  //   const tag = (el.tagName || "").toLowerCase();
+  //   if (tag === "textarea") return true;
+  //   if (tag === "input") return true; // 모든 input에서 스냅 키 무시(안전)
+
+  //   return false;
+  // };
+  console.log(document)
 
   useEffect(() => {
     if (!initialData) {

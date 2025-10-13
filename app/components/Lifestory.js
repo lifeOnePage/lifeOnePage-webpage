@@ -318,13 +318,14 @@ export default function LifestorySection({
                         fontSize: "3rem",
                         fontFamily: "Cormorant Garamond",
                         fontStyle: "oblique 40deg",
+                        color:"#fff"
                       }}
                     >
                       <style>
                         @import
                         url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&display=swap');
                       </style>
-                      Life story
+                      Life-story
                     </p>
                     <p style={{ color: "#aaa" }}>
                       {userName}님의 생애문

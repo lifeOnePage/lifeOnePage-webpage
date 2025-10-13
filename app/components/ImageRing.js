@@ -68,7 +68,7 @@ function ImageRingComponent(
     []
   );
 
-  console.log("imageUrls:", imageUrls,"videoUrls:", videoUrls)
+  // console.log("imageUrls:", imageUrls,"videoUrls:", videoUrls)
   const [isMuted, setIsMuted] = useState(true);
   const [leftmostVideoElement, setLeftmostVideoElement] = useState(null);
   const [categories, setCategories] = useState([
@@ -472,7 +472,7 @@ function ImageRingComponent(
         ? 0
         : 60;
     const offset = direction.clone().multiplyScalar(scalar); // 30 정도 앞으로
-    console.log(THREE.MathUtils.lerp);
+    // console.log(THREE.MathUtils.lerp);
     leftMostMeshRef.current.position.x = THREE.MathUtils.lerp(
       origPos.x,
       origPos.x + offset.x,

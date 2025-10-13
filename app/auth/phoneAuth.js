@@ -40,7 +40,7 @@ export async function sendVerificationCode(phoneNumber) {
 
   if (!verifier) throw new Error("reCAPTCHA가 초기화되지 않았습니다.");
 
-  await setPersistence(auth, browserSessionPersistence);
+  // await setPersistence(auth, browserSessionPersistence);
   return await signInWithPhoneNumber(auth, phoneNumber, verifier);
 }
 
