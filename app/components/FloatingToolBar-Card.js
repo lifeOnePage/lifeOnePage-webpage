@@ -74,6 +74,8 @@ export default function FloatingToolbar({
   };
   return (
     <motion.div
+      drag
+      dragMomentum={false}
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       style={{
@@ -148,12 +150,6 @@ export default function FloatingToolbar({
                   disabled: isPreview,
                 },
                 {
-                  key: "mypage",
-                  onClick: onClickMypage,
-                  icon: <MdOutlineManageAccounts size={20} />,
-                  disabled: isUpdated,
-                },
-                {
                   key: "preview",
                   onClick: () => setIsPreview(!isPreview),
                   icon: isPreview ? (
@@ -179,8 +175,9 @@ export default function FloatingToolbar({
                   disabled: !isUpdated,
                 },
                 {
-                  key: "logout",
-                  onClick: onLogout,
+                  key: "mypage",
+                  onClick: onClickMypage,
+                  disabled: isUpdated,
                   icon: <IoIosLogOut size={20} />,
                 },
               ].map(
@@ -208,14 +205,12 @@ export default function FloatingToolbar({
                             ? "위로"
                             : item.key === "down"
                             ? "아래로"
-                            : item.key === "mypage"
-                            ? "계정 설정"
                             : item.key === "save" && isUpdated
                             ? "저장하려면 클릭하세요"
                             : item.key === "save" && !isUpdated
                             ? "변경사항이 저장됨"
-                            : item.key === "logout"
-                            ? "로그아웃"
+                            : item.key === "mypage"
+                            ? "나가기"
                             : ""}
                         </div>
                       )}

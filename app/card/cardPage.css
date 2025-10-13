@@ -196,6 +196,16 @@ body,
   border-bottom: 1.2px solid #121212;
 }
 
+.lr-date-location {
+  text-align: right;
+  font-family: "Helvetica Neue LT Std";
+  font-size: 1.5rem;
+  font-style: normal;
+  font-weight: 300;
+  line-height: 110%;
+  letter-spacing: -0.125rem;
+}
+
 .lr-name {
   font-family: "Helvetica Neue LT Std";
   font-size: 2.3rem;
